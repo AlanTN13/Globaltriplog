@@ -1,6 +1,6 @@
 # app.py
 from __future__ import annotations
-import os, json, math, time, requests
+import os, json, requests
 from datetime import datetime
 
 import numpy as np
@@ -19,26 +19,20 @@ st.markdown("""
   --soft-bg: #f4f9fb;
   --soft-card: #ffffff;
   --soft-border: #dfe7ef;
-  --soft-text: #000033;      /* todo texto oscuro = #000033 */
+  --soft-text: #000033;      /* texto = #000033 */
   --soft-muted: #000033;
   --soft-focus: rgba(0, 0, 51, .2);
 }
 html, body, [data-testid="stAppViewContainer"] { background: var(--soft-bg) !important; }
-
-/* Ocultar toolbar/menú */
 header, div[data-testid="stToolbar"]{ display:none !important; }
 
-/* ===== Forzar que TODO texto sea #000033 ===== */
-body, [data-testid="stAppViewContainer"]{
-  color: var(--brand) !important;
-}
+/* Forzar TODO texto #000033 */
+body, [data-testid="stAppViewContainer"]{ color: var(--brand) !important; }
 body, [data-testid="stAppViewContainer"] p, span, label, div, li,
 h1, h2, h3, h4, h5, h6, a, small, strong, em, th, td,
-div[data-testid="stMarkdownContainer"] * {
-  color: var(--brand) !important;
-}
+div[data-testid="stMarkdownContainer"] * { color: var(--brand) !important; }
 
-/* Card del hero */
+/* Card */
 .soft-card{
   background: var(--soft-card);
   border: 1.5px solid var(--soft-border);
@@ -47,16 +41,14 @@ div[data-testid="stMarkdownContainer"] * {
   box-shadow: 0 8px 18px rgba(17,24,39,.07);
 }
 
-/* Titulares, labels, captions (igual forzados arriba) */
+/* Labels */
 div[data-testid="stMetricLabel"],
 div[data-testid="stCaptionContainer"],
 div[data-testid="stWidgetLabel"] p,
 div[data-testid="stWidgetLabel"] label,
 div[data-testid="stRadio"] label,
 section[aria-label] > div > label,
-div[data-baseweb="textarea"] label {
-  color: var(--brand) !important;
-}
+div[data-baseweb="textarea"] label { color: var(--brand) !important; }
 
 /* Inputs */
 div[data-testid="stTextInput"] input,
@@ -78,23 +70,17 @@ div[data-testid="stTextArea"] textarea:focus{
   box-shadow:0 0 0 3px var(--soft-focus),
              0 6px 16px rgba(17,24,39,0.06) !important;
 }
-/* Placeholder exactamente #000033 */
 div[data-testid="stTextInput"] input::placeholder,
 div[data-testid="stNumberInput"] input::placeholder,
 div[data-testid="stTextArea"] textarea::placeholder{
-  color:#000033 !important;
-  opacity:1 !important;
+  color:#000033 !important; opacity:1 !important;
 }
 
 /* Radio chips */
 div[data-testid="stRadio"] label{
-  background:#fff;
-  border:1.5px solid var(--soft-border);
-  border-radius:14px;
-  padding:8px 12px;
-  margin-right:8px;
-  color:var(--brand) !important;
-  box-shadow:0 4px 12px rgba(17,24,39,0.05);
+  background:#fff; border:1.5px solid var(--soft-border);
+  border-radius:14px; padding:8px 12px; margin-right:8px;
+  color:var(--brand) !important; box-shadow:0 4px 12px rgba(17,24,39,0.05);
 }
 
 /* Métricas */
@@ -119,7 +105,7 @@ div.stButton > button:hover{
   box-shadow:0 12px 26px rgba(17,24,39,.12) !important;
 }
 
-/* Data editor claro + texto #000033 */
+/* Data editor */
 [data-testid="stDataFrame"]{
   background:#fff !important;
   border:1.5px solid var(--soft-border) !important;
@@ -134,13 +120,44 @@ div.stButton > button:hover{
   border-bottom:1px solid var(--soft-border) !important;
 }
 [data-testid="stDataFrame"] div[role="cell"]{
-  background:#fff !important;
-  color: var(--brand) !important;
+  background:#fff !important; color: var(--brand) !important;
   border-color: var(--soft-border) !important;
 }
 [data-testid="stDataFrame"] *::selection{ background: var(--soft-focus) !important; }
-/* achicar padding filas */
 [data-testid="stDataFrame"] .st-emotion-cache-1xarl3l { padding: 6px 10px !important; }
+
+/* ===== Modal (st.modal) ===== */
+[data-testid="stModal"] > div {
+  border:1.5px solid var(--soft-border);
+  border-radius:18px;
+  box-shadow:0 18px 40px rgba(17,24,39,.25);
+}
+[data-testid="stModal"] .stButton > button{
+  border:1.5px solid var(--soft-border) !important;
+  border-radius:16px !important;
+  background:#f0f7ff !important;
+  color:var(--brand) !important;
+  padding:14px 18px !important;
+}
+[data-testid="stModal"] .stButton > button:hover{ box-shadow:0 12px 26px rgba(17,24,39,.12) !important; }
+
+/* ===== Fallback “modal-like” (si no hay st.modal) ===== */
+.gt-overlay{
+  position:fixed; inset:0; background:rgba(2,6,23,.45); z-index:9999;
+  display:flex; align-items:center; justify-content:center;
+}
+.gt-modal{
+  max-width:640px; width:92%; background:#fff; color:var(--brand);
+  border:1.5px solid var(--soft-border); border-radius:18px; padding:22px;
+  box-shadow:0 18px 40px rgba(17,24,39,.25);
+}
+.gt-modal h3{ margin:0 0 8px 0; font-size:28px; }
+.gt-modal p{ margin:6px 0; }
+.gt-actions{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:12px; }
+.gt-actions button{
+  width:100%; border:1.5px solid var(--soft-border); border-radius:16px;
+  background:#f0f7ff; color:var(--brand); padding:12px 16px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -207,11 +224,12 @@ def post_to_webhook(payload: dict):
         return False, f"Error de red: {e}"
 
 def _rerun():
-    # Compatibilidad versiones
-    if hasattr(st, "rerun"):
-        st.rerun()
-    else:
-        st.experimental_rerun()
+    if hasattr(st, "rerun"): st.rerun()
+    else: st.experimental_rerun()
+
+def _email_link(addr: str) -> str:
+    a = (addr or "").strip()
+    return f"<a href='mailto:{a}'>{a}</a>" if a else ""
 
 # -------------------- App --------------------
 init_state()
@@ -255,24 +273,18 @@ col_cfg = {
     "Largo (cm)": st.column_config.NumberColumn("Largo (cm)", min_value=0, step=1),
     "Peso vol. (kg)": st.column_config.NumberColumn("Peso vol. (kg)", step=0.01, disabled=True, help="Se calcula automáticamente"),
 }
-
 edited = st.data_editor(
     st.session_state.df,
-    key="bultos_editor",
-    num_rows="dynamic",
-    use_container_width=True,
-    hide_index=True,
-    column_config=col_cfg
+    key="bultos_editor", num_rows="dynamic",
+    use_container_width=True, hide_index=True, column_config=col_cfg
 )
-
 st.session_state.df, total_peso_vol = compute_vol(edited)
 
 # Pesos
 st.write("")
 st.subheader("Pesos")
 m1, mMid, m2 = st.columns([1.1, 1.1, 1.1])
-with m1:
-    st.metric("Peso volumétrico (kg) 🔒", f"{total_peso_vol:,.2f}")
+with m1:  st.metric("Peso volumétrico (kg) 🔒", f"{total_peso_vol:,.2f}")
 with mMid:
     st.session_state.peso_bruto = st.number_input("Peso bruto (kg)", min_value=0.0, step=0.5, value=float(st.session_state.peso_bruto))
 with m2:
@@ -333,30 +345,41 @@ if btn:
             st.session_state.last_submit_ok = False
             st.error(msg)
 
-# Popup post-submit con fallback (modal si hay st.dialog)
+# ---------- Popup post-submit (modal si existe; si no, overlay CSS) ----------
 if st.session_state.get("show_dialog", False):
-    if hasattr(st, "dialog"):
-        with st.dialog("✅ Cotización enviada"):
-            st.write("¡Gracias! En breve recibirás tu cotización por email.")
+    email_html = _email_link(st.session_state.email)
+
+    if hasattr(st, "modal"):
+        with st.modal("¡Listo!"):
+            st.markdown(
+                f"Recibimos tu solicitud. En breve te llegará la cotización a {email_html}.",
+                unsafe_allow_html=True
+            )
+            st.caption("Podés cargar otra si querés.")
             cA, cB = st.columns(2)
             with cA:
-                if st.button("➕ Cargar otra cotización", use_container_width=True, key="modal_recargar"):
-                    reset_form()
-                    st.session_state.show_dialog = False
-                    _rerun()
+                if st.button("➕ Cargar otra cotización", use_container_width=True, key="m_recargar"):
+                    reset_form(); st.session_state.show_dialog = False; _rerun()
             with cB:
-                if st.button("Cerrar", use_container_width=True, key="modal_cerrar"):
-                    st.session_state.show_dialog = False
-                    _rerun()
+                if st.button("Cerrar", use_container_width=True, key="m_cerrar"):
+                    st.session_state.show_dialog = False; _rerun()
     else:
-        st.success("¡Gracias! En breve recibirás tu cotización por email.")
-        cA, cB = st.columns(2)
-        with cA:
-            if st.button("➕ Cargar otra cotización", key="inline_recargar"):
-                reset_form()
-                st.session_state.show_dialog = False
-                _rerun()
-        with cB:
-            if st.button("Cerrar", key="inline_cerrar"):
-                st.session_state.show_dialog = False
-                _rerun()
+        overlay = st.empty()
+        with overlay.container():
+            st.markdown(
+                f"""
+                <div class="gt-overlay">
+                  <div class="gt-modal">
+                    <h3>¡Listo!</h3>
+                    <p>Recibimos tu solicitud. En breve te llegará la cotización a {email_html}.</p>
+                    <p style="opacity:.7;">Podés cargar otra si querés.</p>
+                """, unsafe_allow_html=True
+            )
+            cA, cB = st.columns(2)
+            with cA:
+                if st.button("➕ Cargar otra cotización", key="f_recargar"):
+                    reset_form(); st.session_state.show_dialog = False; _rerun()
+            with cB:
+                if st.button("Cerrar", key="f_cerrar"):
+                    st.session_state.show_dialog = False; _rerun()
+            st.markdown("</div></div>", unsafe_allow_html=True)

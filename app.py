@@ -22,19 +22,18 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Constantes
+# ====== Constantes / columnas internas estables ======
 FACTOR_VOL = 5000  # cm³/kg
 MAX_ROWS   = 20
 
-# Columnas internas estables + labels UI
 COLS = {
     "cantidad": "Cantidad de bultos",
     "ancho_cm": "Ancho (cm)",
     "alto_cm":  "Alto (cm)",
     "largo_cm": "Largo (cm)",
 }
-PESO_VOL_COL   = "peso_vol_kg"          # interna
-PESO_VOL_LABEL = "Peso vol. (kg) 🔒"    # UI
+PESO_VOL_COL   = "peso_vol_kg"        # interna
+PESO_VOL_LABEL = "Peso vol. (kg) 🔒"  # label UI
 
 # ============== Helpers ==============
 def is_email(x: str) -> bool:
@@ -73,9 +72,41 @@ def post_to_automation(payload: dict) -> tuple[bool, str]:
         headers["Authorization"] = f"Bearer {token}"
     r = requests.post(url, json=payload, headers=headers, timeout=20)
     ok = 200 <= r.status_code < 300
-    return ok, r.text or str(r.status_code)
+    return ok, (r.text or str(r.status_code))
 
 def reset_form_state():
+    """
+    Limpia keys de widgets. En el próximo rerun se recrean con defaults.
+    (Evita StreamlitAPIException por setear widgets post-submit.)
+    """
+    for k in [
+        "bultos_df",
+        "peso_bruto",
+        "valor_mercaderia",
+        "nombre",
+        "email",
+        "telefono",
+        "es_cliente",
+        "descripcion",
+        "link",
+    ]:
+        if k in st.session_state:
+            del st.session_state[k]
+
+def df_for_payload(df_internal: pd.DataFrame) -> list[dict]:
+    df = df_internal.rename(columns={**COLS, PESO_VOL_COL: "Peso vol. (kg)"})
+    return df.to_dict(orient="records")
+
+# ============== Hero ==============
+st.markdown("""
+<div class="hero">
+  <h1>🧮 Cotización de Envío por Courier</h1>
+  <div class="sub">Completá tus datos y la información del envío. Te enviaremos la cotización por email.</div>
+</div>
+""", unsafe_allow_html=True)
+
+# ============== Estado inicial (defaults una sola vez) ==============
+if "bultos_df" not in st.session_state:
     st.session_state.bultos_df = default_bultos_df()
     st.session_state.peso_bruto = 0.0
     st.session_state.valor_mercaderia = 0.0
@@ -86,24 +117,7 @@ def reset_form_state():
     st.session_state.descripcion = ""
     st.session_state.link = ""
 
-def df_for_payload(df_internal: pd.DataFrame) -> list[dict]:
-    """Convierte columnas internas -> labels amigables para el webhook."""
-    df = df_internal.rename(columns={**COLS, PESO_VOL_COL: "Peso vol. (kg)"})
-    return df.to_dict(orient="records")
-
-# ============== Header ==============
-st.markdown("""
-<div class="hero">
-  <h1>🧮 Cotización de Envío por Courier</h1>
-  <div class="sub">Completá tus datos y la información del envío. Te enviaremos la cotización por email.</div>
-</div>
-""", unsafe_allow_html=True)
-
-# ============== Estado inicial ==============
-if "bultos_df" not in st.session_state:
-    reset_form_state()
-
-# ============== Card única: contacto + producto (2 filas debajo) ==============
+# ============== Card: contacto + producto (2 filas) ==============
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.markdown("### Datos de contacto y del producto")
 
@@ -118,22 +132,22 @@ with c3:
 with c4:
     st.radio("¿Cliente/alumno de Global Trip?", ["No", "Sí"], key="es_cliente", horizontal=True)
 
-# Fila 2 (completa): descripción
+# Fila 2: descripción (completa)
 st.text_area("Descripción del producto*", key="descripcion",
              placeholder='Ej: "Máquina selladora de bolsas"', height=110)
-# Fila 3 (completa): link
+# Fila 3: link (completa)
 st.text_input("Link del producto o ficha técnica (Alibaba, Amazon, etc.)*",
               key="link", placeholder="https://...")
 st.markdown('</div>', unsafe_allow_html=True)
 
-# ============== BULTOS (fuera del form para cálculo en vivo) ==============
+# ============== Bultos (tabla con cálculo por fila) ==============
 st.markdown("### Bultos")
 st.caption("Ingresá por bulto: cantidad y dimensiones en **cm**. El peso volumétrico se calcula solo.")
 
-# 1) DF actual desde sesión
+# 1) DF actual
 current = st.session_state.bultos_df.copy()
 
-# 2) Mostrar editor con columna calculada bloqueada (usamos un DF ya calculado)
+# 2) Mostrar editor con columna calculada bloqueada (a partir del DF calculado)
 to_edit = compute_peso_vol(current).copy()
 
 edited_raw = st.data_editor(
@@ -153,17 +167,17 @@ edited_raw = st.data_editor(
     key="editor_bultos",
 )
 
-# 3) Tomo SOLO columnas editables y normalizo tipos
+# 3) Normalizar SOLO columnas editables
 base_cols = ["cantidad", "ancho_cm", "alto_cm", "largo_cm"]
 edited_clean = edited_raw[base_cols].copy()
 edited_clean["cantidad"] = edited_clean["cantidad"].fillna(0).astype(int)
 for k in ["ancho_cm", "alto_cm", "largo_cm"]:
     edited_clean[k] = edited_clean[k].fillna(0).astype(float)
 
-# 4) Recalculo el peso volumétrico
+# 4) Recalcular peso volumétrico
 edited_with_calc = compute_peso_vol(edited_clean)
 
-# 5) Detecto cambios vs. lo que había en sesión y fuerzo rerender si cambió
+# 5) Si cambió algo respecto a sesión, guardar y forzar rerender para ver la col. calculada al instante
 changed = True
 try:
     changed = not edited_clean.equals(current[base_cols])
@@ -172,12 +186,12 @@ except Exception:
 
 if changed:
     st.session_state.bultos_df = edited_with_calc
-    st.rerun()  # refresca para que la columna calculada se vea actualizada al instante
+    st.rerun()
 
-# 6) Con DF ya actualizado en sesión, calculo el total para las métricas
+# 6) Totales
 total_peso_vol = round(edited_with_calc[PESO_VOL_COL].sum(), 2)
 
-# ============== FORM (submit) ==============
+# ============== Formulario (submit) ==============
 with st.form("cotizacion_form"):
     st.markdown("### Pesos")
     p1, p2, p3 = st.columns(3)
@@ -242,7 +256,7 @@ if submit:
                 "descripcion": st.session_state.descripcion.strip(),
                 "link": st.session_state.link.strip(),
             },
-            "bultos": df_for_payload(edited_with_calc),  # columnas en español
+            "bultos": df_for_payload(edited_with_calc),
             "totales": {
                 "peso_vol_total": total_peso_vol,
                 "peso_bruto": st.session_state.peso_bruto,

@@ -10,23 +10,33 @@ import streamlit as st
 # -------------------- Config --------------------
 st.set_page_config(page_title="Cotizador GlobalTrip", page_icon="📦", layout="wide")
 
-# -------------------- Styles (azules + tabla clara) --------------------
+# -------------------- Styles (TODO texto #000033) --------------------
 st.markdown("""
 <style>
 :root{
-  --brand: #2563eb;          /* azul */
+  --brand: #000033;          /* color pedido */
   --brand-soft: #eaf1ff;
   --soft-bg: #f4f9fb;
   --soft-card: #ffffff;
   --soft-border: #dfe7ef;
-  --soft-text: #0f172a;
-  --soft-muted: #667085;
-  --soft-focus: rgba(37, 99, 235, .2);
+  --soft-text: #000033;      /* todo texto oscuro = #000033 */
+  --soft-muted: #000033;
+  --soft-focus: rgba(0, 0, 51, .2);
 }
 html, body, [data-testid="stAppViewContainer"] { background: var(--soft-bg) !important; }
 
 /* Ocultar toolbar/menú */
 header, div[data-testid="stToolbar"]{ display:none !important; }
+
+/* ======== Forzar que TODO texto sea #000033 ======== */
+body, [data-testid="stAppViewContainer"]{
+  color: var(--brand) !important;
+}
+body, [data-testid="stAppViewContainer"] p, span, label, div, li,
+h1, h2, h3, h4, h5, h6, a, small, strong, em, th, td,
+div[data-testid="stMarkdownContainer"] * {
+  color: var(--brand) !important;
+}
 
 /* Card del hero */
 .soft-card{
@@ -37,30 +47,25 @@ header, div[data-testid="stToolbar"]{ display:none !important; }
   box-shadow: 0 8px 18px rgba(17,24,39,.07);
 }
 
-/* ------------- AZUL PARA TITULOS / LABELS / CAPTION ------------- */
-h1, h2, h3, h4, h5, h6,
-div[data-testid="stMarkdownContainer"] h1,
-div[data-testid="stMarkdownContainer"] h2,
-div[data-testid="stMarkdownContainer"] h3,
-div[data-testid="stMarkdownContainer"] h4,
+/* Titulares, labels, captions (igualmente ya forzados arriba) */
 div[data-testid="stMetricLabel"],
 div[data-testid="stCaptionContainer"],
 div[data-testid="stWidgetLabel"] p,
 div[data-testid="stWidgetLabel"] label,
 div[data-testid="stRadio"] label,
-section[aria-label] > div > label, /* text inputs/areas/number labels */
+section[aria-label] > div > label,
 div[data-baseweb="textarea"] label {
   color: var(--brand) !important;
 }
 
-/* Inputs estilo pill pastel */
+/* Inputs */
 div[data-testid="stTextInput"] input,
 div[data-testid="stNumberInput"] input,
 div[data-testid="stTextArea"] textarea{
   background:#fff !important;
   border:1.5px solid var(--soft-border) !important;
   border-radius:16px !important;
-  color:var(--soft-text) !important;
+  color:var(--brand) !important;
   padding:14px 16px !important;
   box-shadow:0 6px 16px rgba(17,24,39,0.06),
              0 1px 0 rgba(255,255,255,0.55) inset !important;
@@ -73,11 +78,11 @@ div[data-testid="stTextArea"] textarea:focus{
   box-shadow:0 0 0 3px var(--soft-focus),
              0 6px 16px rgba(17,24,39,0.06) !important;
 }
-/* Placeholder también en azul suave */
+/* Placeholder exactamente #000033 */
 div[data-testid="stTextInput"] input::placeholder,
 div[data-testid="stNumberInput"] input::placeholder,
 div[data-testid="stTextArea"] textarea::placeholder{
-  color:#6b93ff !important;
+  color:#000033 !important;
   opacity:1 !important;
 }
 
@@ -88,24 +93,24 @@ div[data-testid="stRadio"] label{
   border-radius:14px;
   padding:8px 12px;
   margin-right:8px;
-  color:var(--brand);
+  color:var(--brand) !important;
   box-shadow:0 4px 12px rgba(17,24,39,0.05);
 }
 
-/* Métricas blancas, números oscuros, labels azules (ya arriba) */
+/* Métricas: valores también en #000033 */
 div[data-testid="stMetric"]{
   background:#fff; border:1.5px solid var(--soft-border);
   border-radius:16px; padding:18px 20px;
   box-shadow:0 8px 18px rgba(17,24,39,.07);
 }
-div[data-testid="stMetricValue"]{ color:#0f172a !important; }
+div[data-testid="stMetricValue"]{ color: var(--brand) !important; }
 
-/* Botón */
+/* Botón (texto #000033) */
 div.stButton > button{
   border:1.5px solid var(--soft-border) !important;
   border-radius:16px !important;
   background:#ffffff !important;
-  color:#0f172a !important;
+  color:#000033 !important;
   padding:14px 18px !important;
   box-shadow:0 10px 22px rgba(17,24,39,.09) !important;
 }
@@ -114,7 +119,7 @@ div.stButton > button:hover{
   box-shadow:0 12px 26px rgba(17,24,39,.12) !important;
 }
 
-/* ------------- DATA EDITOR CLARO (invertido) ------------- */
+/* Data editor claro + texto #000033 */
 [data-testid="stDataFrame"]{
   background:#fff !important;
   border:1.5px solid var(--soft-border) !important;
@@ -122,21 +127,19 @@ div.stButton > button:hover{
   box-shadow:0 8px 18px rgba(17,24,39,.07) !important;
   overflow:hidden;
 }
-/* grid container (roles usados por editor) */
 [data-testid="stDataFrame"] div[role="grid"]{ background:#fff !important; }
 [data-testid="stDataFrame"] div[role="columnheader"]{
   background: var(--brand-soft) !important;
-  color: var(--soft-text) !important;
+  color: var(--brand) !important;
   border-bottom:1px solid var(--soft-border) !important;
 }
 [data-testid="stDataFrame"] div[role="cell"]{
   background:#fff !important;
-  color: var(--soft-text) !important;
+  color: var(--brand) !important;
   border-color: var(--soft-border) !important;
 }
 [data-testid="stDataFrame"] *::selection{ background: var(--soft-focus) !important; }
-
-/* achicar padding filas (más ágil) */
+/* achicar padding filas */
 [data-testid="stDataFrame"] .st-emotion-cache-1xarl3l { padding: 6px 10px !important; }
 </style>
 """, unsafe_allow_html=True)

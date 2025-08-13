@@ -28,7 +28,7 @@ html, body, [data-testid="stAppViewContainer"] { background: var(--soft-bg) !imp
 /* Ocultar toolbar/menú */
 header, div[data-testid="stToolbar"]{ display:none !important; }
 
-/* ======== Forzar que TODO texto sea #000033 ======== */
+/* ===== Forzar que TODO texto sea #000033 ===== */
 body, [data-testid="stAppViewContainer"]{
   color: var(--brand) !important;
 }
@@ -47,7 +47,7 @@ div[data-testid="stMarkdownContainer"] * {
   box-shadow: 0 8px 18px rgba(17,24,39,.07);
 }
 
-/* Titulares, labels, captions (igualmente ya forzados arriba) */
+/* Titulares, labels, captions (igual forzados arriba) */
 div[data-testid="stMetricLabel"],
 div[data-testid="stCaptionContainer"],
 div[data-testid="stWidgetLabel"] p,
@@ -97,7 +97,7 @@ div[data-testid="stRadio"] label{
   box-shadow:0 4px 12px rgba(17,24,39,0.05);
 }
 
-/* Métricas: valores también en #000033 */
+/* Métricas */
 div[data-testid="stMetric"]{
   background:#fff; border:1.5px solid var(--soft-border);
   border-radius:16px; padding:18px 20px;
@@ -105,7 +105,7 @@ div[data-testid="stMetric"]{
 }
 div[data-testid="stMetricValue"]{ color: var(--brand) !important; }
 
-/* Botón (texto #000033) */
+/* Botón */
 div.stButton > button{
   border:1.5px solid var(--soft-border) !important;
   border-radius:16px !important;
@@ -205,6 +205,13 @@ def post_to_webhook(payload: dict):
         return False, f"n8n devolvió estado {r.status_code}: {r.text[:300]}"
     except Exception as e:
         return False, f"Error de red: {e}"
+
+def _rerun():
+    # Compatibilidad versiones
+    if hasattr(st, "rerun"):
+        st.rerun()
+    else:
+        st.experimental_rerun()
 
 # -------------------- App --------------------
 init_state()
@@ -326,17 +333,30 @@ if btn:
             st.session_state.last_submit_ok = False
             st.error(msg)
 
-# Popup post-submit (modal real)
+# Popup post-submit con fallback (modal si hay st.dialog)
 if st.session_state.get("show_dialog", False):
-    with st.dialog("✅ Cotización enviada"):
-        st.write("¡Gracias! En breve recibirás tu cotización por email.")
+    if hasattr(st, "dialog"):
+        with st.dialog("✅ Cotización enviada"):
+            st.write("¡Gracias! En breve recibirás tu cotización por email.")
+            cA, cB = st.columns(2)
+            with cA:
+                if st.button("➕ Cargar otra cotización", use_container_width=True, key="modal_recargar"):
+                    reset_form()
+                    st.session_state.show_dialog = False
+                    _rerun()
+            with cB:
+                if st.button("Cerrar", use_container_width=True, key="modal_cerrar"):
+                    st.session_state.show_dialog = False
+                    _rerun()
+    else:
+        st.success("¡Gracias! En breve recibirás tu cotización por email.")
         cA, cB = st.columns(2)
         with cA:
-            if st.button("➕ Cargar otra cotización", use_container_width=True):
+            if st.button("➕ Cargar otra cotización", key="inline_recargar"):
                 reset_form()
                 st.session_state.show_dialog = False
-                st.rerun()
+                _rerun()
         with cB:
-            if st.button("Cerrar", use_container_width=True):
+            if st.button("Cerrar", key="inline_cerrar"):
                 st.session_state.show_dialog = False
-                st.rerun()
+                _rerun()

@@ -6,7 +6,7 @@ import pandas as pd
 import requests
 import streamlit as st
 
-# ============== Config ==============
+# ========================= Config =========================
 st.set_page_config(page_title="Cotización GlobalTrip", page_icon="🧮", layout="wide")
 st.markdown("""
 <style>
@@ -35,7 +35,7 @@ COLS = {
 PESO_VOL_COL   = "peso_vol_kg"        # interna
 PESO_VOL_LABEL = "Peso vol. (kg) 🔒"  # label UI
 
-# ============== Helpers ==============
+# ========================= Helpers =========================
 def is_email(x: str) -> bool:
     return bool(re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", x or ""))
 
@@ -97,7 +97,25 @@ def df_for_payload(df_internal: pd.DataFrame) -> list[dict]:
     df = df_internal.rename(columns={**COLS, PESO_VOL_COL: "Peso vol. (kg)"})
     return df.to_dict(orient="records")
 
-# ============== Hero ==============
+# ========================= Modal de “gracias” =========================
+@st.dialog("¡Solicitud enviada!")
+def _thanks_dialog():
+    email_destino = st.session_state.get("_last_email", "")
+    st.success(f"Gracias por tu consulta. En breve te enviaremos la cotización a **{email_destino}**.")
+    st.caption("Si no lo ves en unos minutos, revisá la carpeta de Spam/Promociones.")
+
+    col_ok, col_cancel = st.columns(2)
+    with col_ok:
+        if st.button("Aceptar y limpiar", type="primary", use_container_width=True):
+            reset_form_state()
+            st.session_state["show_thanks"] = False
+            st.rerun()
+    with col_cancel:
+        if st.button("Cerrar", use_container_width=True):
+            st.session_state["show_thanks"] = False
+            st.rerun()
+
+# ========================= Hero =========================
 st.markdown("""
 <div class="hero">
   <h1>🧮 Cotización de Envío por Courier</h1>
@@ -105,7 +123,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ============== Estado inicial (defaults una sola vez) ==============
+# ========================= Estado inicial =========================
 if "bultos_df" not in st.session_state:
     st.session_state.bultos_df = default_bultos_df()
     st.session_state.peso_bruto = 0.0
@@ -117,7 +135,11 @@ if "bultos_df" not in st.session_state:
     st.session_state.descripcion = ""
     st.session_state.link = ""
 
-# ============== Card: contacto + producto (2 filas) ==============
+# Mostrar modal si quedó marcado
+if st.session_state.get("show_thanks", False):
+    _thanks_dialog()
+
+# ========================= Card: contacto + producto =========================
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.markdown("### Datos de contacto y del producto")
 
@@ -140,18 +162,17 @@ st.text_input("Link del producto o ficha técnica (Alibaba, Amazon, etc.)*",
               key="link", placeholder="https://...")
 st.markdown('</div>', unsafe_allow_html=True)
 
-# ============== Bultos (tabla con cálculo por fila) ==============
+# ========================= Bultos (tabla sin reruns forzados) =========================
 st.markdown("### Bultos")
 st.caption("Ingresá por bulto: cantidad y dimensiones en **cm**. El peso volumétrico se calcula solo.")
 
-# 1) DF actual
+# DF actual (persistente en sesión)
 current = st.session_state.bultos_df.copy()
-
-# 2) Mostrar editor con columna calculada bloqueada (a partir del DF calculado)
-to_edit = compute_peso_vol(current).copy()
+# Muestro el editor con una columna calculada bloqueada
+to_show = compute_peso_vol(current).copy()
 
 edited_raw = st.data_editor(
-    to_edit,
+    to_show,
     use_container_width=True,
     num_rows="dynamic",
     hide_index=True,
@@ -167,31 +188,19 @@ edited_raw = st.data_editor(
     key="editor_bultos",
 )
 
-# 3) Normalizar SOLO columnas editables
+# Normalizo campos editables y los guardo en sesión (sin st.rerun manual)
 base_cols = ["cantidad", "ancho_cm", "alto_cm", "largo_cm"]
 edited_clean = edited_raw[base_cols].copy()
 edited_clean["cantidad"] = edited_clean["cantidad"].fillna(0).astype(int)
 for k in ["ancho_cm", "alto_cm", "largo_cm"]:
     edited_clean[k] = edited_clean[k].fillna(0).astype(float)
+st.session_state.bultos_df = edited_clean
 
-# 4) Recalcular peso volumétrico
-edited_with_calc = compute_peso_vol(edited_clean)
+# Calculo totales a partir de lo editado
+calc_df = compute_peso_vol(edited_clean)
+total_peso_vol = round(calc_df[PESO_VOL_COL].sum(), 2)
 
-# 5) Si cambió algo respecto a sesión, guardar y forzar rerender para ver la col. calculada al instante
-changed = True
-try:
-    changed = not edited_clean.equals(current[base_cols])
-except Exception:
-    changed = True
-
-if changed:
-    st.session_state.bultos_df = edited_with_calc
-    st.rerun()
-
-# 6) Totales
-total_peso_vol = round(edited_with_calc[PESO_VOL_COL].sum(), 2)
-
-# ============== Formulario (submit) ==============
+# ========================= Formulario (submit) =========================
 with st.form("cotizacion_form"):
     st.markdown("### Pesos")
     p1, p2, p3 = st.columns(3)
@@ -212,7 +221,7 @@ with st.form("cotizacion_form"):
 
     submit = st.form_submit_button("📨 Solicitar cotización")
 
-# ============== Validación + Envío ==============
+# ========================= Validación + Envío =========================
 def validar_form() -> list[str]:
     errs = []
     if not st.session_state.nombre or len(st.session_state.nombre.strip()) < 2:
@@ -226,15 +235,15 @@ def validar_form() -> list[str]:
     if not is_url(st.session_state.link):
         errs.append("Ingresá un link válido (debe empezar con http:// o https://).")
 
-    valid_rows = edited_with_calc[
-        (edited_with_calc["cantidad"] > 0) &
-        (edited_with_calc["ancho_cm"] > 0) &
-        (edited_with_calc["alto_cm"] > 0) &
-        (edited_with_calc["largo_cm"] > 0)
+    valid_rows = calc_df[
+        (calc_df["cantidad"] > 0) &
+        (calc_df["ancho_cm"] > 0) &
+        (calc_df["alto_cm"] > 0) &
+        (calc_df["largo_cm"] > 0)
     ]
     if valid_rows.empty:
         errs.append("Agregá al menos un bulto con medidas > 0.")
-    if len(edited_with_calc) > MAX_ROWS:
+    if len(calc_df) > MAX_ROWS:
         errs.append(f"Máximo {MAX_ROWS} filas de bultos.")
     return errs
 
@@ -256,7 +265,7 @@ if submit:
                 "descripcion": st.session_state.descripcion.strip(),
                 "link": st.session_state.link.strip(),
             },
-            "bultos": df_for_payload(edited_with_calc),
+            "bultos": df_for_payload(calc_df),
             "totales": {
                 "peso_vol_total": total_peso_vol,
                 "peso_bruto": st.session_state.peso_bruto,
@@ -268,20 +277,9 @@ if submit:
         with st.spinner("Enviando…"):
             ok, msg = post_to_automation(payload)
         if ok:
-            st.success("✅ ¡Gracias! En breve recibirás tu cotización por email.")
-            # Debug opcional con ?debug=1
-            debug_flag = False
-            try:
-                debug_flag = st.query_params.get("debug", ["0"])[0] == "1"
-            except Exception:
-                try:
-                    debug_flag = st.experimental_get_query_params().get("debug", ["0"])[0] == "1"
-                except Exception:
-                    debug_flag = False
-            if debug_flag:
-                with st.expander("Payload enviado (debug)"):
-                    st.json(payload)
-            reset_form_state()
+            # Abrimos modal de gracias: limpia sólo al aceptar
+            st.session_state["_last_email"] = st.session_state.email
+            st.session_state["show_thanks"] = True
             st.rerun()
         else:
             st.error("No pudimos enviar tu solicitud.")

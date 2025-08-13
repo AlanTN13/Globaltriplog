@@ -1,7 +1,6 @@
 # app.py
 import re
 from datetime import datetime
-
 import pandas as pd
 import requests
 import streamlit as st
@@ -15,56 +14,34 @@ st.markdown("""
     --gt-surface:#f9fbff; --gt-border:#e6eef7; --gt-text:#0b2540; --gt-muted:#5d6b7c;
     --gt-primary:#e9f5ff; --gt-primary-border:#c6e3f7; --gt-primary-hover:#dff0ff;
   }
-
-  /* Hero */
-  .hero{
-    background:linear-gradient(90deg, #eef7ff 0%, #fafcff 100%);
-    border:1px solid var(--gt-border);
-    border-radius:16px; padding:18px 20px; margin-bottom:14px
-  }
+  .hero{ background:linear-gradient(90deg, #eef7ff 0%, #fafcff 100%);
+         border:1px solid var(--gt-border); border-radius:16px; padding:18px 20px; margin-bottom:14px }
   .hero h1{margin:0; font-size:28px; color:var(--gt-text)}
   .sub{color:var(--gt-muted); margin-top:6px}
-
-  /* Cards */
-  .card{
-    border:1px solid var(--gt-border);
-    background:#ffffffaa;
-    border-radius:14px; padding:16px; margin-bottom:12px;
-  }
+  .card{ border:1px solid var(--gt-border); background:#ffffffaa; border-radius:14px; padding:16px; margin-bottom:12px }
   .card h3{margin:0 0 12px 0; color:var(--gt-text)}
-
-  /* Botones más pasteles */
   div.stButton > button[kind="primary"]{
-    background:var(--gt-primary) !important;
-    color:var(--gt-text) !important;
-    border:1px solid var(--gt-primary-border) !important;
-    border-radius: 9999px !important;
+    background:var(--gt-primary) !important; color:var(--gt-text) !important;
+    border:1px solid var(--gt-primary-border) !important; border-radius: 9999px !important;
     padding: 0.6rem 1rem !important;
   }
   div.stButton > button[kind="primary"]:hover{
-    background:var(--gt-primary-hover) !important;
-    border-color:var(--gt-primary-border) !important;
+    background:var(--gt-primary-hover) !important; border-color:var(--gt-primary-border) !important;
   }
   div.stButton > button{
-    background:#f5f7fb !important;
-    color:var(--gt-text) !important;
-    border:1px solid var(--gt-border) !important;
-    border-radius: 10px !important;
+    background:#f5f7fb !important; color:var(--gt-text) !important;
+    border:1px solid var(--gt-border) !important; border-radius: 10px !important;
   }
-  div.stButton > button:hover{
-    background:#eef3fb !important;
-  }
-
-  /* Métricas en blanco (número + etiqueta) */
-  [data-testid="stMetricValue"]{ color:#ffffff !important; text-shadow:none !important; }
+  div.stButton > button:hover{ background:#eef3fb !important; }
+  /* Métricas en blanco */
+  [data-testid="stMetricValue"]{ color:#ffffff !important; }
   [data-testid="stMetricLabel"]{ color:#ffffff !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# ====== Constantes / columnas internas estables ======
+# ====== Constantes ======
 FACTOR_VOL = 5000  # cm³/kg
 MAX_ROWS   = 20
-
 COLS = {
     "cantidad": "Cantidad de bultos",
     "ancho_cm": "Ancho (cm)",
@@ -87,20 +64,21 @@ def is_url(x: str) -> bool:
 
 def peso_vol_row(q, a, h, l, factor=FACTOR_VOL) -> float:
     try:
-        q = int(q); a = float(a); h = float(h); l = float(l)
+        q = int(float(q)); a = float(a); h = float(h); l = float(l)
         if q <= 0 or a <= 0 or h <= 0 or l <= 0: return 0.0
         return round(q * (a * h * l) / factor, 2)
     except Exception:
         return 0.0
 
 def default_bultos_df(n_rows: int = 8) -> pd.DataFrame:
-    return pd.DataFrame([{k: 0 for k in COLS.keys()} for _ in range(n_rows)])
+    # guardamos como texto para evitar que el grid “autorrellene” con 0
+    return pd.DataFrame([{k: "" for k in COLS.keys()} for _ in range(n_rows)])
 
 def post_to_automation(payload: dict) -> tuple[bool, str]:
     url = st.secrets.get("N8N_WEBHOOK_URL", "")
     token = st.secrets.get("N8N_TOKEN", "")
     if not url:
-        return False, "Falta configurar N8N_WEBHOOK_URL en *Settings → Secrets* (TOML)."
+        return False, "Falta N8N_WEBHOOK_URL en Secrets (TOML)."
     headers = {"Content-Type": "application/json"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
@@ -109,20 +87,8 @@ def post_to_automation(payload: dict) -> tuple[bool, str]:
     return ok, (r.text or str(r.status_code))
 
 def reset_form_state():
-    """Limpia keys para recrear con defaults al próximo rerun."""
-    for k in [
-        "bultos_df",
-        "peso_bruto",
-        "valor_mercaderia",
-        "nombre",
-        "email",
-        "telefono",
-        "es_cliente",
-        "descripcion",
-        "link",
-    ]:
-        if k in st.session_state:
-            del st.session_state[k]
+    for k in ["bultos_df","peso_bruto","valor_mercaderia","nombre","email","telefono","es_cliente","descripcion","link"]:
+        if k in st.session_state: del st.session_state[k]
 
 def df_for_payload(df_internal: pd.DataFrame) -> list[dict]:
     df = df_internal.rename(columns={**COLS, PESO_VOL_COL: "Peso vol. (kg)"})
@@ -133,18 +99,14 @@ def df_for_payload(df_internal: pd.DataFrame) -> list[dict]:
 def _thanks_dialog():
     email_destino = st.session_state.get("_last_email", st.session_state.get("email", "tu email"))
     st.write(f"Recibimos tu solicitud. En breve te llegará la cotización a **{email_destino}**.")
-    st.caption("Podés cargar otra si querés.")
-
+    st.caption("¿Querés cargar otra cotización?")
     c1, c2 = st.columns(2)
     with c1:
         if st.button("➕ Cargar otra cotización", type="primary", use_container_width=True):
-            reset_form_state()
-            st.session_state["show_thanks"] = False
-            st.rerun()
+            reset_form_state(); st.session_state["show_thanks"] = False; st.rerun()
     with c2:
         if st.button("Cerrar", use_container_width=True):
-            st.session_state["show_thanks"] = False
-            st.rerun()
+            st.session_state["show_thanks"] = False; st.rerun()
 
 # ========================= Hero =========================
 st.markdown("""
@@ -166,7 +128,6 @@ if "bultos_df" not in st.session_state:
     st.session_state.descripcion = ""
     st.session_state.link = ""
 
-# Mostrar modal si quedó marcado
 if st.session_state.get("show_thanks", False):
     _thanks_dialog()
 
@@ -174,72 +135,75 @@ if st.session_state.get("show_thanks", False):
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.markdown("### Datos de contacto y del producto")
 
-# Fila 1: contacto
 c1, c2, c3, c4 = st.columns([1.1, 1.1, 0.9, 0.9])
-with c1:
-    st.text_input("Nombre completo*", key="nombre", placeholder="Ej: Juan Pérez")
-with c2:
-    st.text_input("Correo electrónico*", key="email", placeholder="ejemplo@email.com")
-with c3:
-    st.text_input("Teléfono*", key="telefono", placeholder="Ej: 11 5555 5555")
-with c4:
-    st.radio("¿Cliente/alumno de Global Trip?", ["No", "Sí"], key="es_cliente", horizontal=True)
+with c1: st.text_input("Nombre completo*", key="nombre", placeholder="Ej: Juan Pérez")
+with c2: st.text_input("Correo electrónico*", key="email", placeholder="ejemplo@email.com")
+with c3: st.text_input("Teléfono*", key="telefono", placeholder="Ej: 11 5555 5555")
+with c4: st.radio("¿Cliente/alumno de Global Trip?", ["No", "Sí"], key="es_cliente", horizontal=True)
 
-# Fila 2: descripción (completa)
 st.text_area("Descripción del producto*", key="descripcion",
              placeholder='Ej: "Máquina selladora de bolsas"', height=110)
-# Fila 3: link (completa)
 st.text_input("Link del producto o ficha técnica (Alibaba, Amazon, etc.)*",
               key="link", placeholder="https://...")
 st.markdown('</div>', unsafe_allow_html=True)
 
-# ========================= BULTOS (rápido y estable) =========================
+# ========================= BULTOS (rápido y sin “saltos”) =========================
 st.markdown("### Bultos")
 st.caption("Tip: usá el botón “+” al final de la tabla para agregar más bultos.")
 st.caption("Ingresá por bulto: cantidad y dimensiones en **cm**. El peso volumétrico se calcula solo.")
 
 base_cols = ["cantidad", "ancho_cm", "alto_cm", "largo_cm"]
 
-def _to_numeric_copy(df: pd.DataFrame) -> pd.DataFrame:
-    """Convierte a numérico SOLO para cálculo (sin pisar lo que el usuario está escribiendo)."""
+def _numeric_copy_for_calc(df: pd.DataFrame) -> pd.DataFrame:
     out = df.copy()
     for c in base_cols:
         out[c] = pd.to_numeric(out[c], errors="coerce")
     return out
 
-# 1) Mostramos la tabla con una columna calculada, pero NO pisamos session_state al castear
-raw_df = st.session_state.bultos_df.copy()  # lo que el usuario viene editando (puede tener strings/NaN parciales)
-calc_input = _to_numeric_copy(raw_df).fillna(0)
+raw_df = st.session_state.bultos_df.copy()      # exactamente lo que escribe el usuario (strings vacíos incluidos)
+calc_df = _numeric_copy_for_calc(raw_df).fillna(0)
 
-# Agregamos la columna calculada para mostrar
-to_show = calc_input.copy()
-to_show[PESO_VOL_COL] = to_show.apply(
-    lambda r: peso_vol_row(r["cantidad"], r["ancho_cm"], r["alto_cm"], r["largo_cm"], FACTOR_VOL),
-    axis=1
-)
+# columna calculada (en copia) para mostrar
+peso_vol_series = calc_df.apply(lambda r: peso_vol_row(r["cantidad"], r["ancho_cm"], r["alto_cm"], r["largo_cm"]), axis=1)
+show_df = raw_df.copy()                          # NO tocamos las editables
+show_df[PESO_VOL_COL] = peso_vol_series
 
+# Columnas editables como TEXTO con validación → evita que el grid meta 0 y “pise” mientras tipeás
 edited = st.data_editor(
-    to_show,                       # mostramos con la col de peso vol
+    show_df,
     use_container_width=True,
     num_rows="dynamic",
     hide_index=True,
+    column_order=[*base_cols, PESO_VOL_COL],
     column_config={
-        "cantidad": st.column_config.NumberColumn(COLS["cantidad"], step=1, min_value=0),
-        "ancho_cm": st.column_config.NumberColumn(COLS["ancho_cm"], step=1, min_value=0),
-        "alto_cm":  st.column_config.NumberColumn(COLS["alto_cm"],  step=1, min_value=0),
-        "largo_cm": st.column_config.NumberColumn(COLS["largo_cm"], step=1, min_value=0),
-        PESO_VOL_COL: st.column_config.NumberColumn(PESO_VOL_LABEL, step=0.01, disabled=True, help="Se calcula automáticamente"),
+        "cantidad": st.column_config.TextColumn(
+            COLS["cantidad"], help="Sólo números enteros",
+            validate=r"^\d*$", width="small", placeholder="0"
+        ),
+        "ancho_cm": st.column_config.TextColumn(
+            COLS["ancho_cm"], help="Sólo números (decimales opcionales)",
+            validate=r"^\d*([.]\d*)?$", placeholder="0"
+        ),
+        "alto_cm": st.column_config.TextColumn(
+            COLS["alto_cm"], help="Sólo números (decimales opcionales)",
+            validate=r"^\d*([.]\d*)?$", placeholder="0"
+        ),
+        "largo_cm": st.column_config.TextColumn(
+            COLS["largo_cm"], help="Sólo números (decimales opcionales)",
+            validate=r"^\d*([.]\d*)?$", placeholder="0"
+        ),
+        PESO_VOL_COL: st.column_config.NumberColumn(PESO_VOL_LABEL, disabled=True, step=0.01),
     },
     key="editor_bultos",
 )
 
-# 2) Guardamos SOLO las columnas editables tal cual las dejó el usuario (sin castear)
+# Guardamos tal cual lo editado (texto)
 st.session_state.bultos_df = edited[base_cols].copy()
 
-# 3) Calculamos el total usando una copia numérica (rápido y sin sobrescribir lo que escribe el usuario)
-calc_df = _to_numeric_copy(st.session_state.bultos_df).fillna(0)
+# Recalcular totales usando copia numérica
+calc_df = _numeric_copy_for_calc(st.session_state.bultos_df).fillna(0)
 calc_df[PESO_VOL_COL] = calc_df.apply(
-    lambda r: peso_vol_row(r["cantidad"], r["ancho_cm"], r["alto_cm"], r["largo_cm"], FACTOR_VOL),
+    lambda r: peso_vol_row(r["cantidad"], r["ancho_cm"], r["alto_cm"], r["largo_cm"]),
     axis=1
 )
 total_peso_vol = round(calc_df[PESO_VOL_COL].sum(), 2)
@@ -248,8 +212,7 @@ total_peso_vol = round(calc_df[PESO_VOL_COL].sum(), 2)
 with st.form("cotizacion_form"):
     st.markdown("### Pesos")
     p1, p2, p3 = st.columns(3)
-    with p1:
-        st.metric("Peso volumétrico (kg) 🔒", f"{total_peso_vol:.2f}")
+    with p1: st.metric("Peso volumétrico (kg) 🔒", f"{total_peso_vol:.2f}")
     with p2:
         st.number_input("Peso bruto (kg)", min_value=0.0,
                         value=float(st.session_state.get("peso_bruto", 0.0)),
@@ -257,7 +220,6 @@ with st.form("cotizacion_form"):
     with p3:
         peso_aplicable = max(st.session_state.peso_bruto, total_peso_vol)
         st.metric("Peso aplicable (kg) 🔒", f"{peso_aplicable:.2f}")
-
     st.caption("El **peso aplicable** es el mayor entre el volumétrico y el bruto.")
 
     st.markdown("### Valor de la mercadería")
@@ -305,7 +267,7 @@ if submit:
                 "nombre": st.session_state.nombre.strip(),
                 "email": st.session_state.email.strip(),
                 "telefono": st.session_state.telefono.strip(),
-                "es_cliente": st.session_state.es_cliente,  # "No" o "Sí"
+                "es_cliente": st.session_state.es_cliente,
             },
             "producto": {
                 "descripcion": st.session_state.descripcion.strip(),
@@ -330,5 +292,4 @@ if submit:
             st.error("No pudimos enviar tu solicitud.")
             st.code(msg)
 
-# ========================= Footer mini privacidad =========================
 st.caption("Usamos estos datos sólo para generar tu cotización. No compartimos tu información.")

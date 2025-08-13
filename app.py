@@ -17,8 +17,8 @@ st.markdown("""
   }
   .hero h1{margin:0;font-size:28px}
   .sub{color:#b9c2cf;margin-top:6px}
-  .card{border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:14px; margin-bottom:12px;}
-  .card h4{margin:0 0 10px 0}
+  .card{border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:16px; margin-bottom:12px;}
+  .card h3{margin:0 0 12px 0}
 </style>
 """, unsafe_allow_html=True)
 
@@ -26,15 +26,15 @@ st.markdown("""
 FACTOR_VOL = 5000  # cm³/kg
 MAX_ROWS   = 20
 
-# Columnas internas (estables) y labels para UI / payload
+# Columnas internas estables + labels UI
 COLS = {
     "cantidad": "Cantidad de bultos",
     "ancho_cm": "Ancho (cm)",
     "alto_cm":  "Alto (cm)",
     "largo_cm": "Largo (cm)",
 }
-PESO_VOL_COL = "peso_vol_kg"           # interna
-PESO_VOL_LABEL = "Peso vol. (kg) 🔒"   # sólo UI
+PESO_VOL_COL   = "peso_vol_kg"          # interna
+PESO_VOL_LABEL = "Peso vol. (kg) 🔒"    # UI
 
 # ============== Helpers ==============
 def is_email(x: str) -> bool:
@@ -87,7 +87,7 @@ def reset_form_state():
     st.session_state.link = ""
 
 def df_for_payload(df_internal: pd.DataFrame) -> list[dict]:
-    """Convierte columnas internas -> labels en español para el webhook."""
+    """Convierte columnas internas -> labels amigables para el webhook."""
     df = df_internal.rename(columns={**COLS, PESO_VOL_COL: "Peso vol. (kg)"})
     return df.to_dict(orient="records")
 
@@ -103,38 +103,40 @@ st.markdown("""
 if "bultos_df" not in st.session_state:
     reset_form_state()
 
-# ============== Card única: contacto + producto ==============
+# ============== Card única: contacto + producto (2 filas debajo) ==============
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.markdown("### Datos de contacto y del producto")
 
 # Fila 1: contacto
-r1c1, r1c2, r1c3, r1c4 = st.columns([1.1, 1.1, 0.9, 0.9])
-with r1c1:
+c1, c2, c3, c4 = st.columns([1.1, 1.1, 0.9, 0.9])
+with c1:
     st.text_input("Nombre completo*", key="nombre", placeholder="Ej: Juan Pérez")
-with r1c2:
+with c2:
     st.text_input("Correo electrónico*", key="email", placeholder="ejemplo@email.com")
-with r1c3:
+with c3:
     st.text_input("Teléfono*", key="telefono", placeholder="Ej: 11 5555 5555")
-with r1c4:
+with c4:
     st.radio("¿Cliente/alumno de Global Trip?", ["No", "Sí"], key="es_cliente", horizontal=True)
 
-# Fila 2: producto
-r2c1, r2c2 = st.columns([1.5, 1.5])
-with r2c1:
-    st.text_area("Descripción del producto*", key="descripcion", placeholder='Ej: "Máquina selladora de bolsas"', height=110)
-with r2c2:
-    st.text_input("Link del producto o ficha técnica (Alibaba, Amazon, etc.)*", key="link", placeholder="https://...")
+# Fila 2 (completa): descripción
+st.text_area("Descripción del producto*", key="descripcion",
+             placeholder='Ej: "Máquina selladora de bolsas"', height=110)
+# Fila 3 (completa): link
+st.text_input("Link del producto o ficha técnica (Alibaba, Amazon, etc.)*",
+              key="link", placeholder="https://...")
 st.markdown('</div>', unsafe_allow_html=True)
 
 # ============== BULTOS (fuera del form para cálculo en vivo) ==============
 st.markdown("### Bultos")
 st.caption("Ingresá por bulto: cantidad y dimensiones en **cm**. El peso volumétrico se calcula solo.")
 
-# Calculamos y mostramos
-bultos_calc = compute_peso_vol(st.session_state.bultos_df)
-to_edit = bultos_calc.copy()  # incluye columna calculada (bloqueada en UI)
+# 1) DF actual desde sesión
+current = st.session_state.bultos_df.copy()
 
-edited = st.data_editor(
+# 2) Mostrar editor con columna calculada bloqueada (usamos un DF ya calculado)
+to_edit = compute_peso_vol(current).copy()
+
+edited_raw = st.data_editor(
     to_edit,
     use_container_width=True,
     num_rows="dynamic",
@@ -144,22 +146,36 @@ edited = st.data_editor(
         "ancho_cm": st.column_config.NumberColumn(COLS["ancho_cm"], step=1, min_value=0),
         "alto_cm":  st.column_config.NumberColumn(COLS["alto_cm"],  step=1, min_value=0),
         "largo_cm": st.column_config.NumberColumn(COLS["largo_cm"], step=1, min_value=0),
-        PESO_VOL_COL: st.column_config.NumberColumn(PESO_VOL_LABEL, step=0.01, disabled=True,
-                                                    help="Se calcula automáticamente"),
+        PESO_VOL_COL: st.column_config.NumberColumn(
+            PESO_VOL_LABEL, step=0.01, disabled=True, help="Se calcula automáticamente"
+        ),
     },
     key="editor_bultos",
 )
 
-# Normalizamos y recomputamos SIEMPRE (ignoramos cambios manuales en la col calculada)
-edited = edited.copy()
-for k in ["cantidad"]:
-    edited[k] = edited[k].fillna(0).astype(int)
+# 3) Tomo SOLO columnas editables y normalizo tipos
+base_cols = ["cantidad", "ancho_cm", "alto_cm", "largo_cm"]
+edited_clean = edited_raw[base_cols].copy()
+edited_clean["cantidad"] = edited_clean["cantidad"].fillna(0).astype(int)
 for k in ["ancho_cm", "alto_cm", "largo_cm"]:
-    edited[k] = edited[k].fillna(0).astype(float)
+    edited_clean[k] = edited_clean[k].fillna(0).astype(float)
 
-edited = compute_peso_vol(edited)
-st.session_state.bultos_df = edited
-total_peso_vol = round(edited[PESO_VOL_COL].sum(), 2)
+# 4) Recalculo el peso volumétrico
+edited_with_calc = compute_peso_vol(edited_clean)
+
+# 5) Detecto cambios vs. lo que había en sesión y fuerzo rerender si cambió
+changed = True
+try:
+    changed = not edited_clean.equals(current[base_cols])
+except Exception:
+    changed = True
+
+if changed:
+    st.session_state.bultos_df = edited_with_calc
+    st.rerun()  # refresca para que la columna calculada se vea actualizada al instante
+
+# 6) Con DF ya actualizado en sesión, calculo el total para las métricas
+total_peso_vol = round(edited_with_calc[PESO_VOL_COL].sum(), 2)
 
 # ============== FORM (submit) ==============
 with st.form("cotizacion_form"):
@@ -196,15 +212,15 @@ def validar_form() -> list[str]:
     if not is_url(st.session_state.link):
         errs.append("Ingresá un link válido (debe empezar con http:// o https://).")
 
-    valid_rows = edited[
-        (edited["cantidad"] > 0) &
-        (edited["ancho_cm"] > 0) &
-        (edited["alto_cm"] > 0) &
-        (edited["largo_cm"] > 0)
+    valid_rows = edited_with_calc[
+        (edited_with_calc["cantidad"] > 0) &
+        (edited_with_calc["ancho_cm"] > 0) &
+        (edited_with_calc["alto_cm"] > 0) &
+        (edited_with_calc["largo_cm"] > 0)
     ]
     if valid_rows.empty:
         errs.append("Agregá al menos un bulto con medidas > 0.")
-    if len(edited) > MAX_ROWS:
+    if len(edited_with_calc) > MAX_ROWS:
         errs.append(f"Máximo {MAX_ROWS} filas de bultos.")
     return errs
 
@@ -226,7 +242,7 @@ if submit:
                 "descripcion": st.session_state.descripcion.strip(),
                 "link": st.session_state.link.strip(),
             },
-            "bultos": df_for_payload(edited),  # columnas en español para tu flujo
+            "bultos": df_for_payload(edited_with_calc),  # columnas en español
             "totales": {
                 "peso_vol_total": total_peso_vol,
                 "peso_bruto": st.session_state.peso_bruto,
@@ -239,7 +255,7 @@ if submit:
             ok, msg = post_to_automation(payload)
         if ok:
             st.success("✅ ¡Gracias! En breve recibirás tu cotización por email.")
-            # Mostrar debug sólo si ?debug=1
+            # Debug opcional con ?debug=1
             debug_flag = False
             try:
                 debug_flag = st.query_params.get("debug", ["0"])[0] == "1"

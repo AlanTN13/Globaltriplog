@@ -211,7 +211,6 @@ def reset_form():
     })
 
 def post_to_webhook(payload: dict):
-    # Best-effort (no rompe si no hay secrets)
     url = st.secrets.get("N8N_WEBHOOK_URL", os.getenv("N8N_WEBHOOK_URL",""))
     token = st.secrets.get("N8N_TOKEN", os.getenv("N8N_TOKEN",""))
     if not url:
@@ -346,7 +345,7 @@ if btn:
         payload = {
             "timestamp": datetime.utcnow().isoformat(),
             "origen": "streamlit-cotizador",
-            "factor_vol": FACTOR_VOL,  # <- FIX: nombre completo
+            "factor_vol": FACTOR_VOL,
             "contacto": {
                 "nombre": st.session_state.nombre.strip(),
                 "email": st.session_state.email.strip(),
@@ -381,7 +380,7 @@ if st.session_state.get("show_dialog", False):
     if hasattr(st, "modal"):
         with st.modal("¡Listo!"):
             st.markdown(
-                f"Recibimos tu solicitud. En breve te llegará la cotización a {email_html}.",
+                "Recibimos tu solicitud. En breve te llegará la cotización a " + email_html + ".",
                 unsafe_allow_html=True
             )
             st.caption("Podés cargar otra si querés.")
@@ -393,28 +392,29 @@ if st.session_state.get("show_dialog", False):
                 if st.button("Cerrar", use_container_width=True):
                     st.session_state.show_dialog = False; _rerun()
     else:
-        # Overlay HTML con JS (misma pestaña, sin abrir tab nuevo)
-        components.html(f"""
-            <div class="gt-overlay">
-              <div class="gt-modal">
-                <h3>¡Listo!</h3>
-                <p>Recibimos tu solicitud. En breve te llegará la cotización a {email_html}.</p>
-                <p style="opacity:.7;">Podés cargar otra si querés.</p>
-                <div class="gt-actions">
-                  <div id="gt-reset" class="gt-btn">➕ Cargar otra cotización</div>
-                  <div id="gt-close" class="gt-btn">Cerrar</div>
-                </div>
-              </div>
-            </div>
-            <script>
-            (function(){
-              function setParam(key,val){ 
-                const u = new URL(window.location.href);
-                if(val===null) u.searchParams.delete(key); else u.searchParams.set(key,val);
-                window.location.replace(u.toString()); /* misma pestaña */
-              }
-              document.getElementById('gt-reset').onclick = function(e){ e.preventDefault(); setParam('gt','reset'); };
-              document.getElementById('gt-close').onclick  = function(e){ e.preventDefault(); setParam('gt','close');  };
-            })();
-            </script>
-        """, height=10, scrolling=False)
+        # Overlay + JS SIN f-string (concatenación, sin conflicto con { })
+        html = (
+            '<div class="gt-overlay">'
+              '<div class="gt-modal">'
+                '<h3>¡Listo!</h3>'
+                '<p>Recibimos tu solicitud. En breve te llegará la cotización a ' + email_html + '.</p>'
+                '<p style="opacity:.7;">Podés cargar otra si querés.</p>'
+                '<div class="gt-actions">'
+                  '<div id="gt-reset" class="gt-btn">➕ Cargar otra cotización</div>'
+                  '<div id="gt-close" class="gt-btn">Cerrar</div>'
+                '</div>'
+              '</div>'
+            '</div>'
+            '<script>'
+            '(function(){'
+              'function setParam(key,val){'
+                'var u = new URL(window.location.href);'
+                'if(val===null){ u.searchParams.delete(key); } else { u.searchParams.set(key,val); }'
+                'window.location.replace(u.toString());'
+              '}'
+              'document.getElementById("gt-reset").onclick = function(e){ e.preventDefault(); setParam("gt","reset"); };'
+              'document.getElementById("gt-close").onclick  = function(e){ e.preventDefault(); setParam("gt","close");  };'
+            '})();'
+            '</script>'
+        )
+        components.html(html, height=10, scrolling=False)

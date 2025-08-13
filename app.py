@@ -211,6 +211,7 @@ def reset_form():
     })
 
 def post_to_webhook(payload: dict):
+    # Best-effort (no rompe si no hay secrets)
     url = st.secrets.get("N8N_WEBHOOK_URL", os.getenv("N8N_WEBHOOK_URL",""))
     token = st.secrets.get("N8N_TOKEN", os.getenv("N8N_TOKEN",""))
     if not url:
@@ -307,7 +308,7 @@ m1, mMid, m2 = st.columns([1.1, 1.1, 1.1])
 with m1:
     st.metric("Peso volumétrico (kg) 🔒", f"{total_peso_vol:,.2f}")
 with mMid:
-    # acepta hasta 6 decimales sin mensajes rojos
+    # acepta hasta 6 decimales sin "Press Enter to apply"
     st.session_state.peso_bruto = st.number_input(
         "Peso bruto (kg)", min_value=0.0, step=0.000001,
         value=float(st.session_state.peso_bruto), format="%.6f"
@@ -345,9 +346,7 @@ if btn:
         payload = {
             "timestamp": datetime.utcnow().isoformat(),
             "origen": "streamlit-cotizador",
-            "factor_vol": FA
-
-CTOR_VOL,
+            "factor_vol": FACTOR_VOL,  # <- FIX: nombre completo
             "contacto": {
                 "nombre": st.session_state.nombre.strip(),
                 "email": st.session_state.email.strip(),
@@ -366,17 +365,13 @@ CTOR_VOL,
             },
             "valor_mercaderia_usd": float(st.session_state.valor_mercaderia)
         }
-        # webhook (best-effort)
-        url = st.secrets.get("N8N_WEBHOOK_URL", os.getenv("N8N_WEBHOOK_URL",""))
-        token = st.secrets.get("N8N_TOKEN", os.getenv("N8N_TOKEN",""))
-        if url:
-            headers = {"Content-Type":"application/json"}
-            if token: headers["Authorization"] = f"Bearer {token}"
-            try: requests.post(url, headers=headers, data=json.dumps(payload), timeout=15)
-            except Exception: pass
-
-        st.session_state.last_submit_ok = True
-        st.session_state.show_dialog = True
+        ok, _ = post_to_webhook(payload)
+        if ok:
+            st.session_state.last_submit_ok = True
+            st.session_state.show_dialog = True
+        else:
+            # igual mostramos el modal (la cotización queda cargada localmente)
+            st.session_state.show_dialog = True
 
 # ---------- Popup post-submit ----------
 if st.session_state.get("show_dialog", False):

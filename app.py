@@ -38,7 +38,7 @@ st.markdown("""
     background:var(--gt-primary) !important;
     color:var(--gt-text) !important;
     border:1px solid var(--gt-primary-border) !important;
-    border-radius: 9999px !important;   /* píldora */
+    border-radius: 9999px !important;
     padding: 0.6rem 1rem !important;
   }
   div.stButton > button[kind="primary"]:hover{
@@ -92,11 +92,6 @@ def peso_vol_row(q, a, h, l, factor=FACTOR_VOL) -> float:
         return round(q * (a * h * l) / factor, 2)
     except Exception:
         return 0.0
-
-def compute_peso_vol(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-    df[PESO_VOL_COL] = df.apply(lambda r: peso_vol_row(r["cantidad"], r["ancho_cm"], r["alto_cm"], r["largo_cm"]), axis=1)
-    return df
 
 def default_bultos_df(n_rows: int = 8) -> pd.DataFrame:
     return pd.DataFrame([{k: 0 for k in COLS.keys()} for _ in range(n_rows)])
@@ -198,16 +193,33 @@ st.text_input("Link del producto o ficha técnica (Alibaba, Amazon, etc.)*",
               key="link", placeholder="https://...")
 st.markdown('</div>', unsafe_allow_html=True)
 
-# ========================= Bultos (tabla) =========================
+# ========================= BULTOS (rápido y estable) =========================
 st.markdown("### Bultos")
 st.caption("Tip: usá el botón “+” al final de la tabla para agregar más bultos.")
 st.caption("Ingresá por bulto: cantidad y dimensiones en **cm**. El peso volumétrico se calcula solo.")
 
-current = st.session_state.bultos_df.copy()
-to_show = compute_peso_vol(current).copy()
+base_cols = ["cantidad", "ancho_cm", "alto_cm", "largo_cm"]
 
-edited_raw = st.data_editor(
-    to_show,
+def _to_numeric_copy(df: pd.DataFrame) -> pd.DataFrame:
+    """Convierte a numérico SOLO para cálculo (sin pisar lo que el usuario está escribiendo)."""
+    out = df.copy()
+    for c in base_cols:
+        out[c] = pd.to_numeric(out[c], errors="coerce")
+    return out
+
+# 1) Mostramos la tabla con una columna calculada, pero NO pisamos session_state al castear
+raw_df = st.session_state.bultos_df.copy()  # lo que el usuario viene editando (puede tener strings/NaN parciales)
+calc_input = _to_numeric_copy(raw_df).fillna(0)
+
+# Agregamos la columna calculada para mostrar
+to_show = calc_input.copy()
+to_show[PESO_VOL_COL] = to_show.apply(
+    lambda r: peso_vol_row(r["cantidad"], r["ancho_cm"], r["alto_cm"], r["largo_cm"], FACTOR_VOL),
+    axis=1
+)
+
+edited = st.data_editor(
+    to_show,                       # mostramos con la col de peso vol
     use_container_width=True,
     num_rows="dynamic",
     hide_index=True,
@@ -216,23 +228,20 @@ edited_raw = st.data_editor(
         "ancho_cm": st.column_config.NumberColumn(COLS["ancho_cm"], step=1, min_value=0),
         "alto_cm":  st.column_config.NumberColumn(COLS["alto_cm"],  step=1, min_value=0),
         "largo_cm": st.column_config.NumberColumn(COLS["largo_cm"], step=1, min_value=0),
-        PESO_VOL_COL: st.column_config.NumberColumn(
-            PESO_VOL_LABEL, step=0.01, disabled=True, help="Se calcula automáticamente"
-        ),
+        PESO_VOL_COL: st.column_config.NumberColumn(PESO_VOL_LABEL, step=0.01, disabled=True, help="Se calcula automáticamente"),
     },
     key="editor_bultos",
 )
 
-# Normalizo y guardo en sesión (sin forzar reruns)
-base_cols = ["cantidad", "ancho_cm", "alto_cm", "largo_cm"]
-edited_clean = edited_raw[base_cols].copy()
-edited_clean["cantidad"] = edited_clean["cantidad"].fillna(0).astype(int)
-for k in ["ancho_cm", "alto_cm", "largo_cm"]:
-    edited_clean[k] = edited_clean[k].fillna(0).astype(float)
-st.session_state.bultos_df = edited_clean
+# 2) Guardamos SOLO las columnas editables tal cual las dejó el usuario (sin castear)
+st.session_state.bultos_df = edited[base_cols].copy()
 
-# Totales (se recalculan en cada rerun normal de Streamlit)
-calc_df = compute_peso_vol(edited_clean)
+# 3) Calculamos el total usando una copia numérica (rápido y sin sobrescribir lo que escribe el usuario)
+calc_df = _to_numeric_copy(st.session_state.bultos_df).fillna(0)
+calc_df[PESO_VOL_COL] = calc_df.apply(
+    lambda r: peso_vol_row(r["cantidad"], r["ancho_cm"], r["alto_cm"], r["largo_cm"], FACTOR_VOL),
+    axis=1
+)
 total_peso_vol = round(calc_df[PESO_VOL_COL].sum(), 2)
 
 # ========================= Formulario (submit) =========================

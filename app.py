@@ -59,16 +59,14 @@ div[data-testid="stTextArea"] textarea{
   border-radius:16px !important;
   color:var(--brand) !important;
   padding:14px 16px !important;
-  box-shadow:0 6px 16px rgba(17,24,39,0.06),
-             0 1px 0 rgba(255,255,255,0.55) inset !important;
+  box-shadow:0 6px 16px rgba(17,24,39,0.06) !important;
 }
 div[data-testid="stTextInput"] input:focus,
 div[data-testid="stNumberInput"] input:focus,
 div[data-testid="stTextArea"] textarea:focus{
   outline:none !important;
   border-color: var(--brand) !important;
-  box-shadow:0 0 0 3px var(--soft-focus),
-             0 6px 16px rgba(17,24,39,0.06) !important;
+  box-shadow:0 0 0 3px var(--soft-focus) !important;
 }
 div[data-testid="stTextInput"] input::placeholder,
 div[data-testid="stNumberInput"] input::placeholder,
@@ -141,7 +139,7 @@ div.stButton > button:hover{
 }
 [data-testid="stModal"] .stButton > button:hover{ box-shadow:0 12px 26px rgba(17,24,39,.12) !important; }
 
-/* ===== Fallback “modal-like” (si no hay st.modal) ===== */
+/* ===== Fallback overlay (sin st.modal) ===== */
 .gt-overlay{
   position:fixed; inset:0; background:rgba(2,6,23,.45); z-index:9999;
   display:flex; align-items:center; justify-content:center;
@@ -153,11 +151,13 @@ div.stButton > button:hover{
 }
 .gt-modal h3{ margin:0 0 8px 0; font-size:28px; }
 .gt-modal p{ margin:6px 0; }
-.gt-actions{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:12px; }
-.gt-actions button{
-  width:100%; border:1.5px solid var(--soft-border); border-radius:16px;
+.gt-actions{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px; }
+a.gt-btn{
+  display:inline-block; text-align:center; text-decoration:none;
+  border:1.5px solid var(--soft-border); border-radius:16px;
   background:#f0f7ff; color:var(--brand); padding:12px 16px;
 }
+a.gt-btn:hover{ filter:brightness(0.98); }
 </style>
 """, unsafe_allow_html=True)
 
@@ -227,12 +227,31 @@ def _rerun():
     if hasattr(st, "rerun"): st.rerun()
     else: st.experimental_rerun()
 
-def _email_link(addr: str) -> str:
-    a = (addr or "").strip()
-    return f"<a href='mailto:{a}'>{a}</a>" if a else ""
+# Query params helpers (compat nuevas/viejas)
+def _get_qs():
+    try:
+        return dict(st.query_params)
+    except Exception:
+        return st.experimental_get_query_params()
+
+def _set_qs(**kwargs):
+    try:
+        st.query_params.clear()
+        for k, v in kwargs.items():
+            st.query_params[k] = v
+    except Exception:
+        st.experimental_set_query_params(**kwargs)
 
 # -------------------- App --------------------
 init_state()
+
+# Acciones por query param del fallback
+qs = _get_qs()
+gt = qs.get("gt", [""])[0] if isinstance(qs.get("gt"), list) else qs.get("gt")
+if gt == "reset":
+    reset_form(); st.session_state.show_dialog = False; _set_qs(); _rerun()
+elif gt == "close":
+    st.session_state.show_dialog = False; _set_qs(); _rerun()
 
 # Hero
 st.markdown("""
@@ -286,15 +305,18 @@ st.subheader("Pesos")
 m1, mMid, m2 = st.columns([1.1, 1.1, 1.1])
 with m1:  st.metric("Peso volumétrico (kg) 🔒", f"{total_peso_vol:,.2f}")
 with mMid:
-    st.session_state.peso_bruto = st.number_input("Peso bruto (kg)", min_value=0.0, step=0.5, value=float(st.session_state.peso_bruto))
+    st.session_state.peso_bruto = st.number_input(
+        "Peso bruto (kg)", min_value=0.0, step=0.10, value=float(st.session_state.peso_bruto), format="%.2f"
+    )
 with m2:
     peso_aplicable = max(total_peso_vol, float(st.session_state.peso_bruto))
     st.metric("Peso aplicable (kg) 🔒", f"{peso_aplicable:,.2f}")
 
 # Valor mercadería
 st.subheader("Valor de la mercadería")
-st.session_state.valor_mercaderia = st.number_input("Valor de la mercadería (USD)", min_value=0.0, step=1.0,
-                                                    value=float(st.session_state.valor_mercaderia))
+st.session_state.valor_mercaderia = st.number_input(
+    "Valor de la mercadería (USD)", min_value=0.0, step=0.01, value=float(st.session_state.valor_mercaderia), format="%.2f"
+)
 
 # Enviar
 st.write("")
@@ -337,17 +359,27 @@ if btn:
             },
             "valor_mercaderia_usd": float(st.session_state.valor_mercaderia)
         }
-        ok, msg = post_to_webhook(payload)
-        if ok:
-            st.session_state.last_submit_ok = True
-            st.session_state.show_dialog = True
-        else:
-            st.session_state.last_submit_ok = False
-            st.error(msg)
+        # Enviar a n8n (silencioso si falta secret)
+        try:
+            url = st.secrets.get("N8N_WEBHOOK_URL", os.getenv("N8N_WEBHOOK_URL",""))
+            token = st.secrets.get("N8N_TOKEN", os.getenv("N8N_TOKEN",""))
+        except Exception:
+            url, token = os.getenv("N8N_WEBHOOK_URL",""), os.getenv("N8N_TOKEN","")
+        if url:
+            headers = {"Content-Type":"application/json"}
+            if token: headers["Authorization"] = f"Bearer {token}"
+            try:
+                requests.post(url, headers=headers, data=json.dumps(payload), timeout=15)
+            except Exception:
+                pass
 
-# ---------- Popup post-submit (modal si existe; si no, overlay CSS) ----------
+        st.session_state.last_submit_ok = True
+        st.session_state.show_dialog = True
+
+# ---------- Popup post-submit ----------
 if st.session_state.get("show_dialog", False):
-    email_html = _email_link(st.session_state.email)
+    email = (st.session_state.email or "").strip()
+    email_html = f"<a href='mailto:{email}'>{email}</a>" if email else "tu correo"
 
     if hasattr(st, "modal"):
         with st.modal("¡Listo!"):
@@ -358,28 +390,26 @@ if st.session_state.get("show_dialog", False):
             st.caption("Podés cargar otra si querés.")
             cA, cB = st.columns(2)
             with cA:
-                if st.button("➕ Cargar otra cotización", use_container_width=True, key="m_recargar"):
+                if st.button("➕ Cargar otra cotización", use_container_width=True):
                     reset_form(); st.session_state.show_dialog = False; _rerun()
             with cB:
-                if st.button("Cerrar", use_container_width=True, key="m_cerrar"):
+                if st.button("Cerrar", use_container_width=True):
                     st.session_state.show_dialog = False; _rerun()
     else:
-        overlay = st.empty()
-        with overlay.container():
-            st.markdown(
-                f"""
-                <div class="gt-overlay">
-                  <div class="gt-modal">
-                    <h3>¡Listo!</h3>
-                    <p>Recibimos tu solicitud. En breve te llegará la cotización a {email_html}.</p>
-                    <p style="opacity:.7;">Podés cargar otra si querés.</p>
-                """, unsafe_allow_html=True
-            )
-            cA, cB = st.columns(2)
-            with cA:
-                if st.button("➕ Cargar otra cotización", key="f_recargar"):
-                    reset_form(); st.session_state.show_dialog = False; _rerun()
-            with cB:
-                if st.button("Cerrar", key="f_cerrar"):
-                    st.session_state.show_dialog = False; _rerun()
-            st.markdown("</div></div>", unsafe_allow_html=True)
+        # Overlay HTML con enlaces que accionan por query params (funciona en todas las versiones)
+        st.markdown(
+            f"""
+            <div class="gt-overlay">
+              <div class="gt-modal">
+                <h3>¡Listo!</h3>
+                <p>Recibimos tu solicitud. En breve te llegará la cotización a {email_html}.</p>
+                <p style="opacity:.7;">Podés cargar otra si querés.</p>
+                <div class="gt-actions">
+                  <a class="gt-btn" href="?gt=reset">➕ Cargar otra cotización</a>
+                  <a class="gt-btn" href="?gt=close">Cerrar</a>
+                </div>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )

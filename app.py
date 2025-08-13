@@ -5,9 +5,8 @@ import pandas as pd
 import requests
 import streamlit as st
 
-# =============== Tema ==================
+# ================== Tema ==================
 st.set_page_config(page_title="Cotización GlobalTrip", page_icon="🧮", layout="wide")
-
 st.markdown("""
 <style>
   .hero{background:linear-gradient(90deg,rgba(11,123,214,.12),rgba(11,123,214,.05));
@@ -20,11 +19,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# =============== Negocio ==================
+# ================== Negocio ==================
 FACTOR_VOL = 5000   # cm³/kg
 MAX_ROWS   = 20
 
-# =============== Helpers ==================
+# ================== Helpers ==================
 def is_email(x: str) -> bool:
     return bool(re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", x or ""))
 
@@ -37,7 +36,7 @@ def peso_vol_row(q, a, h, l, factor=FACTOR_VOL) -> float:
         q = int(q); a = float(a); h = float(h); l = float(l)
         if q <= 0 or a <= 0 or h <= 0 or l <= 0: return 0.0
         return round(q * (a * h * l) / factor, 2)
-    except:  # noqa
+    except:
         return 0.0
 
 def add_peso_vol(df: pd.DataFrame) -> pd.DataFrame:
@@ -60,17 +59,17 @@ def post_to_n8n(payload: dict) -> tuple[bool, str]:
     ok = 200 <= r.status_code < 300
     return ok, r.text or str(r.status_code)
 
-# =============== Estado inicial tabla ==================
+# ================== Estado inicial tabla ==================
 if "bultos_df" not in st.session_state:
     st.session_state.bultos_df = pd.DataFrame(
         [
-            {"Cantidad de bultos": 1, "Ancho (cm)": 10, "Alto (cm)": 10, "Largo (cm)": 194, "Valor de la mercadería (USD)": 519.0},
-            {"Cantidad de bultos": 1, "Ancho (cm)": 40, "Alto (cm)": 28, "Largo (cm)": 48,  "Valor de la mercadería (USD)": 0.0},
-            *[{"Cantidad de bultos": 0, "Ancho (cm)": 0, "Alto (cm)": 0, "Largo (cm)": 0, "Valor de la mercadería (USD)": 0.0} for _ in range(6)]
+            {"Cantidad de bultos": 1, "Ancho (cm)": 10, "Alto (cm)": 10, "Largo (cm)": 194},
+            {"Cantidad de bultos": 1, "Ancho (cm)": 40, "Alto (cm)": 28, "Largo (cm)": 48},
+            *[{"Cantidad de bultos": 0, "Ancho (cm)": 0, "Alto (cm)": 0, "Largo (cm)": 0} for _ in range(6)]
         ]
     )
 
-# =============== Header ==================
+# ================== Header ==================
 st.markdown("""
 <div class="hero">
   <h1>🧮 Cotización de Envío por Courier</h1>
@@ -78,7 +77,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# =============== FORM ==================
+# ================== FORM ==================
 with st.form("cotizacion_form"):
     # --- Datos de contacto ---
     st.markdown("### Datos de contacto")
@@ -92,9 +91,9 @@ with st.form("cotizacion_form"):
 
     es_cliente = st.radio("¿Sos alumno o cliente de Global Trip?", ["Sí", "No"], horizontal=True)
 
-    # --- Bultos (tabla única) ---
+    # --- Bultos (tabla única, sin valor por fila) ---
     st.markdown("### Bultos")
-    st.caption("Ingresá por bulto: cantidad, dimensiones en **cm**, y valor de mercadería en **USD**.")
+    st.caption("Ingresá por bulto: cantidad y dimensiones en **cm**. El peso volumétrico se calcula solo.")
     df_show = st.session_state.bultos_df.copy()
     df_show = add_peso_vol(df_show)  # calcula Peso vol. antes de mostrar
 
@@ -108,7 +107,6 @@ with st.form("cotizacion_form"):
             "Ancho (cm)": st.column_config.NumberColumn("Ancho (cm)", step=1, min_value=0),
             "Alto (cm)":  st.column_config.NumberColumn("Alto (cm)",  step=1, min_value=0),
             "Largo (cm)": st.column_config.NumberColumn("Largo (cm)", step=1, min_value=0),
-            "Valor de la mercadería (USD)": st.column_config.NumberColumn("Valor de la mercadería (USD)", step=1.0, min_value=0.0),
             "Peso vol. (kg) 🔒": st.column_config.NumberColumn("Peso vol. (kg) 🔒", step=0.01, disabled=True, help="Se calcula automáticamente"),
         },
         key="editor_bultos",
@@ -117,38 +115,37 @@ with st.form("cotizacion_form"):
     # normalizo y recalculo
     edited = edited.copy()
     edited["Cantidad de bultos"] = edited["Cantidad de bultos"].fillna(0).astype(int)
-    for col in ["Ancho (cm)", "Alto (cm)", "Largo (cm)", "Valor de la mercadería (USD)"]:
+    for col in ["Ancho (cm)", "Alto (cm)", "Largo (cm)"]:
         edited[col] = edited[col].fillna(0).astype(float)
     edited = add_peso_vol(edited)
     st.session_state.bultos_df = edited
 
-    total_peso_vol   = round(edited["Peso vol. (kg) 🔒"].sum(), 2)
-    total_valor_merc = round(float(edited["Valor de la mercadería (USD)"].sum()), 2)
+    total_peso_vol = round(edited["Peso vol. (kg) 🔒"].sum(), 2)
 
-    # --- Pesos (solo bruto editable) ---
+    # --- Pesos (alineados) ---
     st.markdown("### Pesos")
-    colA, colB, colC = st.columns(3)
-    with colB:
-        # Editable
-        peso_bruto = st.number_input("Peso bruto (kg)", min_value=0.0, value=0.0, step=0.1)
-    peso_aplicable = max(peso_bruto, total_peso_vol)
+    colA, colB, colC = st.columns([1, 1, 1])
     with colA:
-        # No editable (más claro)
-        with st.container():
-            st.markdown('<div class="readonly">', unsafe_allow_html=True)
-            st.number_input("Peso volumétrico (kg) 🔒", value=float(total_peso_vol), step=0.01, disabled=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('<div class="readonly">', unsafe_allow_html=True)
+        st.number_input("Peso volumétrico (kg) 🔒", value=float(total_peso_vol), step=0.01, disabled=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    with colB:
+        peso_bruto = st.number_input("Peso bruto (kg)", min_value=0.0, value=0.0, step=0.1)
     with colC:
-        with st.container():
-            st.markdown('<div class="readonly">', unsafe_allow_html=True)
-            st.number_input("Peso aplicable (kg) 🔒", value=float(peso_aplicable), step=0.01, disabled=True,
-                            help="Máximo entre peso bruto y volumétrico")
-            st.markdown('</div>', unsafe_allow_html=True)
+        peso_aplicable = max(peso_bruto, total_peso_vol)
+        st.markdown('<div class="readonly">', unsafe_allow_html=True)
+        st.number_input("Peso aplicable (kg) 🔒", value=float(peso_aplicable), step=0.01, disabled=True,
+                        help="Máximo entre peso bruto y volumétrico")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # --- Valor general de la compra ---
+    st.markdown("### Valor de la mercadería")
+    valor_mercaderia = st.number_input("Valor de la mercadería (USD)", min_value=0.0, value=0.0, step=1.0)
 
     # --- Enviar ---
     submit = st.form_submit_button("📨 Solicitar cotización")
 
-# =============== Validación + Envío ==================
+# ================== Validación + Envío ==================
 def validar_form() -> list[str]:
     errs = []
     if not nombre or len(nombre.strip()) < 2:
@@ -187,9 +184,9 @@ if submit:
             "bultos": edited.to_dict(orient="records"),
             "totales": {
                 "peso_vol_total": total_peso_vol,
-                "valor_mercaderia_total": total_valor_merc,
                 "peso_bruto": peso_bruto,
                 "peso_aplicable": peso_aplicable,
+                "valor_mercaderia": valor_mercaderia,  # valor general
                 "factor_vol": FACTOR_VOL,
             },
         }

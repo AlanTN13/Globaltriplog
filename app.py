@@ -326,16 +326,17 @@ if btn:
             st.session_state.last_submit_ok = False
             st.error(msg)
 
-# Popup post-submit
+# Popup post-submit (modal real)
 if st.session_state.get("show_dialog", False):
-    st.success("¡Gracias! En breve recibirás tu cotización por email.")
-    cA, cB = st.columns([1,1])
-    with cA:
-        if st.button("➕ Cargar otra cotización", type="primary"):
-            reset_form()
-            st.session_state.show_dialog = False
-            st.experimental_rerun()
-    with cB:
-        if st.button("Cerrar"):
-            st.session_state.show_dialog = False
-            st.experimental_rerun()
+    with st.dialog("✅ Cotización enviada"):
+        st.write("¡Gracias! En breve recibirás tu cotización por email.")
+        cA, cB = st.columns(2)
+        with cA:
+            if st.button("➕ Cargar otra cotización", use_container_width=True):
+                reset_form()
+                st.session_state.show_dialog = False
+                st.rerun()
+        with cB:
+            if st.button("Cerrar", use_container_width=True):
+                st.session_state.show_dialog = False
+                st.rerun()

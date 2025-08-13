@@ -6,7 +6,7 @@ import pandas as pd
 import requests
 import streamlit as st
 
-# ================== Config ==================
+# ============== Config ==============
 st.set_page_config(page_title="Cotización GlobalTrip", page_icon="🧮", layout="wide")
 st.markdown("""
 <style>
@@ -17,13 +17,15 @@ st.markdown("""
   }
   .hero h1{margin:0;font-size:28px}
   .sub{color:#b9c2cf;margin-top:6px}
+  .card{border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:14px 14px 4px 14px; margin-bottom:8px;}
+  .card h4{margin:0 0 8px 0}
 </style>
 """, unsafe_allow_html=True)
 
 FACTOR_VOL = 5000  # cm³/kg
 MAX_ROWS   = 20
 
-# ================== Helpers ==================
+# ============== Helpers ==============
 def is_email(x: str) -> bool:
     return bool(re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", x or ""))
 
@@ -37,8 +39,7 @@ def is_url(x: str) -> bool:
 def peso_vol_row(q, a, h, l, factor=FACTOR_VOL) -> float:
     try:
         q = int(q); a = float(a); h = float(h); l = float(l)
-        if q <= 0 or a <= 0 or h <= 0 or l <= 0:
-            return 0.0
+        if q <= 0 or a <= 0 or h <= 0 or l <= 0: return 0.0
         return round(q * (a * h * l) / factor, 2)
     except Exception:
         return 0.0
@@ -79,7 +80,7 @@ def reset_form_state():
     st.session_state.descripcion = ""
     st.session_state.link = ""
 
-# ================== Header ==================
+# ============== Header ==============
 st.markdown("""
 <div class="hero">
   <h1>🧮 Cotización de Envío por Courier</h1>
@@ -87,38 +88,41 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ================== Estado inicial ==================
+# ============== Estado inicial ==============
 if "bultos_df" not in st.session_state:
     reset_form_state()
 
-# ================== Datos de contacto + producto (una sola sección) ==================
-st.markdown("### Datos de contacto y del producto")
+# ============== Info inicial (dos tarjetas lado a lado) ==============
+st.markdown("### Información del remitente y del producto")
+left, right = st.columns(2, gap="large")
 
-# fila 1: nombre / email / teléfono / cliente?
-r1c1, r1c2, r1c3, r1c4 = st.columns([1.1, 1.1, 0.9, 0.9])
-with r1c1:
-    st.text_input("Nombre completo*", key="nombre", placeholder="Ej: Juan Pérez")
-with r1c2:
-    st.text_input("Correo electrónico*", key="email", placeholder="ejemplo@email.com")
-with r1c3:
-    st.text_input("Teléfono*", key="telefono", placeholder="Ej: 11 5555 5555")
-with r1c4:
-    st.markdown("**¿Cliente/alumno de Global Trip?**")
-    st.radio("", ["No", "Sí"], key="es_cliente", horizontal=True)
+with left:
+    st.markdown('<div class="card"><h4>Datos de contacto</h4>', unsafe_allow_html=True)
+    c1, c2 = st.columns([1, 1])
+    with c1:
+        st.text_input("Nombre completo*", key="nombre", placeholder="Ej: Juan Pérez")
+    with c2:
+        st.text_input("Correo electrónico*", key="email", placeholder="ejemplo@email.com")
+    c3, c4 = st.columns([1, 1])
+    with c3:
+        st.text_input("Teléfono*", key="telefono", placeholder="Ej: 11 5555 5555")
+    with c4:
+        st.radio("¿Cliente/alumno de Global Trip?", ["No", "Sí"], key="es_cliente", horizontal=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# fila 2: descripción y link
-r2c1, r2c2 = st.columns([1.5, 1.5])
-with r2c1:
-    st.text_area("Descripción del producto*", key="descripcion", placeholder='Ej: "Máquina selladora de bolsas"')
-with r2c2:
-    st.text_input("Link del producto o ficha técnica (Alibaba, Amazon, etc.)*", key="link", placeholder="https://...")
+with right:
+    st.markdown('<div class="card"><h4>Datos del producto</h4>', unsafe_allow_html=True)
+    st.text_area("Descripción del producto*", key="descripcion",
+                 placeholder='Ej: "Máquina selladora de bolsas"', height=110)
+    st.text_input("Link del producto o ficha técnica (Alibaba, Amazon, etc.)*",
+                  key="link", placeholder="https://...")
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# ================== BULTOS (fuera del form para recalcular en vivo) ==================
+# ============== BULTOS (fuera del form para recalcular en vivo) ==============
 st.markdown("### Bultos")
 st.caption("Ingresá por bulto: cantidad y dimensiones en **cm**. El peso volumétrico se calcula solo.")
 
 bultos_to_show = add_peso_vol(st.session_state.bultos_df.copy())
-
 edited = st.data_editor(
     bultos_to_show,
     use_container_width=True,
@@ -129,54 +133,41 @@ edited = st.data_editor(
         "Ancho (cm)":       st.column_config.NumberColumn("Ancho (cm)", step=1, min_value=0),
         "Alto (cm)":        st.column_config.NumberColumn("Alto (cm)",  step=1, min_value=0),
         "Largo (cm)":       st.column_config.NumberColumn("Largo (cm)", step=1, min_value=0),
-        "Peso vol. (kg) 🔒": st.column_config.NumberColumn("Peso vol. (kg) 🔒", step=0.01, disabled=True, help="Se calcula automáticamente"),
+        "Peso vol. (kg) 🔒": st.column_config.NumberColumn("Peso vol. (kg) ", step=0.01, disabled=True,
+                                                          help="Se calcula automáticamente"),
     },
     key="editor_bultos",
 )
-
-# normalizar, recalcular y guardar
 edited = edited.copy()
 edited["Cantidad de bultos"] = edited["Cantidad de bultos"].fillna(0).astype(int)
 for col in ["Ancho (cm)", "Alto (cm)", "Largo (cm)"]:
     edited[col] = edited[col].fillna(0).astype(float)
 st.session_state.bultos_df = edited
 edited_calc = add_peso_vol(edited)
-total_peso_vol = round(edited_calc["Peso vol. (kg) 🔒"].sum(), 2)
+total_peso_vol = round(edited_calc["Peso vol. (kg) "].sum(), 2)
 
-# ================== FORM (submit) ==================
+# ============== FORM (submit) ==============
 with st.form("cotizacion_form"):
-    # --- Pesos ---
     st.markdown("### Pesos")
     p1, p2, p3 = st.columns(3)
     with p1:
-        st.metric("Peso volumétrico (kg) 🔒", f"{total_peso_vol:.2f}")
+        st.metric("Peso volumétrico (kg) ", f"{total_peso_vol:.2f}")
     with p2:
-        st.number_input(
-            "Peso bruto (kg)",
-            min_value=0.0,
-            value=float(st.session_state.get("peso_bruto", 0.0)),
-            step=0.1,
-            format="%.2f",
-            key="peso_bruto",
-        )
+        st.number_input("Peso bruto (kg)", min_value=0.0,
+                        value=float(st.session_state.get("peso_bruto", 0.0)),
+                        step=0.1, format="%.2f", key="peso_bruto")
     with p3:
         peso_aplicable = max(st.session_state.peso_bruto, total_peso_vol)
-        st.metric("Peso aplicable (kg) 🔒", f"{peso_aplicable:.2f}")
+        st.metric("Peso aplicable (kg) ", f"{peso_aplicable:.2f}")
 
-    # --- Valor mercadería ---
     st.markdown("### Valor de la mercadería")
-    st.number_input(
-        "Valor de la mercadería (USD)",
-        min_value=0.0,
-        value=float(st.session_state.get("valor_mercaderia", 0.0)),
-        step=1.0,
-        format="%.2f",
-        key="valor_mercaderia",
-    )
+    st.number_input("Valor de la mercadería (USD)", min_value=0.0,
+                    value=float(st.session_state.get("valor_mercaderia", 0.0)),
+                    step=1.0, format="%.2f", key="valor_mercaderia")
 
     submit = st.form_submit_button("📨 Solicitar cotización")
 
-# ================== Validación + Envío ==================
+# ============== Validación + Envío ==============
 def validar_form() -> list[str]:
     errs = []
     if not st.session_state.nombre or len(st.session_state.nombre.strip()) < 2:
@@ -204,8 +195,7 @@ def validar_form() -> list[str]:
 if submit:
     errores = validar_form()
     if errores:
-        for e in errores:
-            st.error(e)
+        for e in errores: st.error(e)
     else:
         payload = {
             "timestamp": datetime.utcnow().isoformat(),
@@ -214,7 +204,7 @@ if submit:
                 "nombre": st.session_state.nombre.strip(),
                 "email": st.session_state.email.strip(),
                 "telefono": st.session_state.telefono.strip(),
-                "es_cliente": st.session_state.es_cliente,  # "No" o "Sí"
+                "es_cliente": st.session_state.es_cliente,   # "No" o "Sí"
             },
             "producto": {
                 "descripcion": st.session_state.descripcion.strip(),
@@ -233,7 +223,7 @@ if submit:
             ok, msg = post_to_automation(payload)
         if ok:
             st.success("✅ ¡Gracias! En breve recibirás tu cotización por email.")
-            # Mostrar debug sólo si ?debug=1
+            # Debug sólo si ?debug=1
             debug_flag = False
             try:
                 debug_flag = st.query_params.get("debug", ["0"])[0] == "1"

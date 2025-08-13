@@ -5,11 +5,10 @@ import pandas as pd
 import requests
 import streamlit as st
 
-# ========================= Config =========================
+# ---------- Config y estilos ----------
 st.set_page_config(page_title="Cotización GlobalTrip", page_icon="🧮", layout="wide")
 st.markdown("""
 <style>
-  /* Paleta pastel y UI suave */
   :root {
     --gt-surface:#f9fbff; --gt-border:#e6eef7; --gt-text:#0b2540; --gt-muted:#5d6b7c;
     --gt-primary:#e9f5ff; --gt-primary-border:#c6e3f7; --gt-primary-hover:#dff0ff;
@@ -33,14 +32,13 @@ st.markdown("""
     border:1px solid var(--gt-border) !important; border-radius: 10px !important;
   }
   div.stButton > button:hover{ background:#eef3fb !important; }
-  /* Métricas en blanco */
   [data-testid="stMetricValue"]{ color:#ffffff !important; }
   [data-testid="stMetricLabel"]{ color:#ffffff !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# ====== Constantes ======
-FACTOR_VOL = 5000  # cm³/kg
+# ---------- Constantes ----------
+FACTOR_VOL = 5000
 MAX_ROWS   = 20
 COLS = {
     "cantidad": "Cantidad de bultos",
@@ -48,10 +46,10 @@ COLS = {
     "alto_cm":  "Alto (cm)",
     "largo_cm": "Largo (cm)",
 }
-PESO_VOL_COL   = "peso_vol_kg"        # interna
-PESO_VOL_LABEL = "Peso vol. (kg) 🔒"  # label UI
+PESO_VOL_COL   = "peso_vol_kg"
+PESO_VOL_LABEL = "Peso vol. (kg) 🔒"
 
-# ========================= Helpers =========================
+# ---------- Helpers ----------
 def is_email(x: str) -> bool:
     return bool(re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", x or ""))
 
@@ -71,7 +69,7 @@ def peso_vol_row(q, a, h, l, factor=FACTOR_VOL) -> float:
         return 0.0
 
 def default_bultos_df(n_rows: int = 8) -> pd.DataFrame:
-    # guardamos como texto para evitar que el grid “autorrellene” con 0
+    # guardamos como texto para evitar “saltos”
     return pd.DataFrame([{k: "" for k in COLS.keys()} for _ in range(n_rows)])
 
 def post_to_automation(payload: dict) -> tuple[bool, str]:
@@ -94,7 +92,7 @@ def df_for_payload(df_internal: pd.DataFrame) -> list[dict]:
     df = df_internal.rename(columns={**COLS, PESO_VOL_COL: "Peso vol. (kg)"})
     return df.to_dict(orient="records")
 
-# ========================= Modal (Opción B) =========================
+# ---------- Modal de gracias ----------
 @st.dialog("¡Listo!")
 def _thanks_dialog():
     email_destino = st.session_state.get("_last_email", st.session_state.get("email", "tu email"))
@@ -108,7 +106,7 @@ def _thanks_dialog():
         if st.button("Cerrar", use_container_width=True):
             st.session_state["show_thanks"] = False; st.rerun()
 
-# ========================= Hero =========================
+# ---------- Hero ----------
 st.markdown("""
 <div class="hero">
   <h1>🧮 Cotización de Envío por Courier</h1>
@@ -116,7 +114,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ========================= Estado inicial =========================
+# ---------- Estado inicial ----------
 if "bultos_df" not in st.session_state:
     st.session_state.bultos_df = default_bultos_df()
     st.session_state.peso_bruto = 0.0
@@ -131,7 +129,7 @@ if "bultos_df" not in st.session_state:
 if st.session_state.get("show_thanks", False):
     _thanks_dialog()
 
-# ========================= Card: contacto + producto =========================
+# ---------- Contacto + Producto ----------
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.markdown("### Datos de contacto y del producto")
 
@@ -147,7 +145,7 @@ st.text_input("Link del producto o ficha técnica (Alibaba, Amazon, etc.)*",
               key="link", placeholder="https://...")
 st.markdown('</div>', unsafe_allow_html=True)
 
-# ========================= BULTOS (rápido y sin “saltos”) =========================
+# ---------- Bultos (rápido) ----------
 st.markdown("### Bultos")
 st.caption("Tip: usá el botón “+” al final de la tabla para agregar más bultos.")
 st.caption("Ingresá por bulto: cantidad y dimensiones en **cm**. El peso volumétrico se calcula solo.")
@@ -160,15 +158,14 @@ def _numeric_copy_for_calc(df: pd.DataFrame) -> pd.DataFrame:
         out[c] = pd.to_numeric(out[c], errors="coerce")
     return out
 
-raw_df = st.session_state.bultos_df.copy()      # exactamente lo que escribe el usuario (strings vacíos incluidos)
+raw_df = st.session_state.bultos_df.copy()
 calc_df = _numeric_copy_for_calc(raw_df).fillna(0)
-
-# columna calculada (en copia) para mostrar
 peso_vol_series = calc_df.apply(lambda r: peso_vol_row(r["cantidad"], r["ancho_cm"], r["alto_cm"], r["largo_cm"]), axis=1)
-show_df = raw_df.copy()                          # NO tocamos las editables
+
+show_df = raw_df.copy()
 show_df[PESO_VOL_COL] = peso_vol_series
 
-# Columnas editables como TEXTO con validación → evita que el grid meta 0 y “pise” mientras tipeás
+# 👇 OJO: sin 'validate' / 'placeholder' (compatibilidad)
 edited = st.data_editor(
     show_df,
     use_container_width=True,
@@ -176,31 +173,18 @@ edited = st.data_editor(
     hide_index=True,
     column_order=[*base_cols, PESO_VOL_COL],
     column_config={
-        "cantidad": st.column_config.TextColumn(
-            COLS["cantidad"], help="Sólo números enteros",
-            validate=r"^\d*$", width="small", placeholder="0"
-        ),
-        "ancho_cm": st.column_config.TextColumn(
-            COLS["ancho_cm"], help="Sólo números (decimales opcionales)",
-            validate=r"^\d*([.]\d*)?$", placeholder="0"
-        ),
-        "alto_cm": st.column_config.TextColumn(
-            COLS["alto_cm"], help="Sólo números (decimales opcionales)",
-            validate=r"^\d*([.]\d*)?$", placeholder="0"
-        ),
-        "largo_cm": st.column_config.TextColumn(
-            COLS["largo_cm"], help="Sólo números (decimales opcionales)",
-            validate=r"^\d*([.]\d*)?$", placeholder="0"
-        ),
+        "cantidad": st.column_config.TextColumn(COLS["cantidad"], help="Sólo números enteros"),
+        "ancho_cm": st.column_config.TextColumn(COLS["ancho_cm"], help="Sólo números"),
+        "alto_cm":  st.column_config.TextColumn(COLS["alto_cm"],  help="Sólo números"),
+        "largo_cm": st.column_config.TextColumn(COLS["largo_cm"], help="Sólo números"),
         PESO_VOL_COL: st.column_config.NumberColumn(PESO_VOL_LABEL, disabled=True, step=0.01),
     },
     key="editor_bultos",
 )
 
-# Guardamos tal cual lo editado (texto)
+# Guardamos tal cual (texto) y recalculamos totales con copia numérica
 st.session_state.bultos_df = edited[base_cols].copy()
 
-# Recalcular totales usando copia numérica
 calc_df = _numeric_copy_for_calc(st.session_state.bultos_df).fillna(0)
 calc_df[PESO_VOL_COL] = calc_df.apply(
     lambda r: peso_vol_row(r["cantidad"], r["ancho_cm"], r["alto_cm"], r["largo_cm"]),
@@ -208,7 +192,7 @@ calc_df[PESO_VOL_COL] = calc_df.apply(
 )
 total_peso_vol = round(calc_df[PESO_VOL_COL].sum(), 2)
 
-# ========================= Formulario (submit) =========================
+# ---------- Form submit ----------
 with st.form("cotizacion_form"):
     st.markdown("### Pesos")
     p1, p2, p3 = st.columns(3)
@@ -229,7 +213,7 @@ with st.form("cotizacion_form"):
 
     submit = st.form_submit_button("📨 Solicitar cotización")
 
-# ========================= Validación + Envío =========================
+# ---------- Validación + envío ----------
 def validar_form() -> list[str]:
     errs = []
     if not st.session_state.nombre or len(st.session_state.nombre.strip()) < 2:

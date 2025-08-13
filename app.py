@@ -85,58 +85,42 @@ st.markdown("""
 
 # ================== Estado inicial ==================
 if "bultos_df" not in st.session_state:
-    reset_form_state()  # deja todo en blanco/0 al primer load
+    reset_form_state()
 
-# ================== FORM ==================
+# ================== BULTOS (fuera del form para recalcular en vivo) ==================
+st.markdown("### Bultos")
+st.caption("Ingresá por bulto: cantidad y dimensiones en **cm**. El peso volumétrico se calcula solo.")
+
+# Mostrar con cálculo actual
+bultos_to_show = add_peso_vol(st.session_state.bultos_df.copy())
+
+edited = st.data_editor(
+    bultos_to_show,
+    use_container_width=True,
+    num_rows="dynamic",
+    hide_index=True,
+    column_config={
+        "Cantidad de bultos": st.column_config.NumberColumn("Cantidad de bultos", step=1, min_value=0),
+        "Ancho (cm)": st.column_config.NumberColumn("Ancho (cm)", step=1, min_value=0),
+        "Alto (cm)":  st.column_config.NumberColumn("Alto (cm)",  step=1, min_value=0),
+        "Largo (cm)": st.column_config.NumberColumn("Largo (cm)", step=1, min_value=0),
+        "Peso vol. (kg) 🔒": st.column_config.NumberColumn("Peso vol. (kg) 🔒", step=0.01, disabled=True, help="Se calcula automáticamente"),
+    },
+    key="editor_bultos",
+)
+
+# Normalizar, recalcular y guardar en sesión (triggerá rerun en cada edición)
+edited = edited.copy()
+edited["Cantidad de bultos"] = edited["Cantidad de bultos"].fillna(0).astype(int)
+for col in ["Ancho (cm)", "Alto (cm)", "Largo (cm)"]:
+    edited[col] = edited[col].fillna(0).astype(float)
+st.session_state.bultos_df = edited  # guardo
+edited_calc = add_peso_vol(edited)
+total_peso_vol = round(edited_calc["Peso vol. (kg) 🔒"].sum(), 2)
+
+# ================== FORM (submit) ==================
 with st.form("cotizacion_form"):
-    # --- Datos de contacto ---
-    st.markdown("### Datos de contacto")
-    c1, c2, c3 = st.columns([1.1, 1.1, 0.9])
-    with c1:
-        nombre = st.text_input("Nombre completo*", key="nombre", placeholder="Ej: Juan Pérez")
-    with c2:
-        email = st.text_input("Correo electrónico*", key="email", placeholder="ejemplo@email.com")
-    with c3:
-        telefono = st.text_input("Teléfono*", key="telefono", placeholder="Ej: 11 5555 5555")
-
-    es_cliente = st.radio("¿Sos alumno o cliente de Global Trip?", ["Sí", "No"], horizontal=True, key="es_cliente")
-
-    # --- Producto ---
-    st.markdown("### Datos del producto o paquete")
-    descripcion = st.text_area("Descripción del producto*", key="descripcion", placeholder='Ej: "Máquina selladora de bolsas"')
-    link = st.text_input("Link del producto o ficha técnica (Alibaba, Amazon, etc.)*", key="link", placeholder="https://...")
-
-    # --- Bultos ---
-    st.markdown("### Bultos")
-    st.caption("Ingresá por bulto: cantidad y dimensiones en **cm**. El peso volumétrico se calcula solo.")
-    df_show = add_peso_vol(st.session_state.bultos_df.copy())
-
-    edited = st.data_editor(
-        df_show,
-        use_container_width=True,
-        num_rows="dynamic",
-        hide_index=True,
-        column_config={
-            "Cantidad de bultos": st.column_config.NumberColumn("Cantidad de bultos", step=1, min_value=0),
-            "Ancho (cm)": st.column_config.NumberColumn("Ancho (cm)", step=1, min_value=0),
-            "Alto (cm)":  st.column_config.NumberColumn("Alto (cm)",  step=1, min_value=0),
-            "Largo (cm)": st.column_config.NumberColumn("Largo (cm)", step=1, min_value=0),
-            "Peso vol. (kg) 🔒": st.column_config.NumberColumn("Peso vol. (kg) 🔒", step=0.01, disabled=True, help="Se calcula automáticamente"),
-        },
-        key="editor_bultos",
-    )
-
-    # normalizo y recalculo
-    edited = edited.copy()
-    edited["Cantidad de bultos"] = edited["Cantidad de bultos"].fillna(0).astype(int)
-    for col in ["Ancho (cm)", "Alto (cm)", "Largo (cm)"]:
-        edited[col] = edited[col].fillna(0).astype(float)
-    edited = add_peso_vol(edited)
-    st.session_state.bultos_df = edited
-
-    total_peso_vol = round(edited["Peso vol. (kg) 🔒"].sum(), 2)
-
-    # --- Pesos ---
+    # --- Pesos (métricas + input) ---
     st.markdown("### Pesos")
     p1, p2, p3 = st.columns(3)
     with p1:
@@ -165,7 +149,23 @@ with st.form("cotizacion_form"):
         key="valor_mercaderia",
     )
 
-    # --- Enviar ---
+    # --- Datos de contacto ---
+    st.markdown("### Datos de contacto")
+    c1, c2, c3 = st.columns([1.1, 1.1, 0.9])
+    with c1:
+        nombre = st.text_input("Nombre completo*", key="nombre", placeholder="Ej: Juan Pérez")
+    with c2:
+        email = st.text_input("Correo electrónico*", key="email", placeholder="ejemplo@email.com")
+    with c3:
+        telefono = st.text_input("Teléfono*", key="telefono", placeholder="Ej: 11 5555 5555")
+
+    es_cliente = st.radio("¿Sos alumno o cliente de Global Trip?", ["Sí", "No"], horizontal=True, key="es_cliente")
+
+    # --- Producto ---
+    st.markdown("### Datos del producto o paquete")
+    descripcion = st.text_area("Descripción del producto*", key="descripcion", placeholder='Ej: "Máquina selladora de bolsas"')
+    link = st.text_input("Link del producto o ficha técnica (Alibaba, Amazon, etc.)*", key="link", placeholder="https://...")
+
     submit = st.form_submit_button("📨 Solicitar cotización")
 
 # ================== Validación + Envío ==================
@@ -212,11 +212,11 @@ if submit:
                 "descripcion": st.session_state.descripcion.strip(),
                 "link": st.session_state.link.strip(),
             },
-            "bultos": edited.to_dict(orient="records"),
+            "bultos": edited_calc.to_dict(orient="records"),
             "totales": {
                 "peso_vol_total": total_peso_vol,
                 "peso_bruto": st.session_state.peso_bruto,
-                "peso_aplicable": peso_aplicable,
+                "peso_aplicable": max(st.session_state.peso_bruto, total_peso_vol),
                 "valor_mercaderia": st.session_state.valor_mercaderia,
                 "factor_vol": FACTOR_VOL,
             },
@@ -225,16 +225,13 @@ if submit:
             ok, msg = post_to_automation(payload)
         if ok:
             st.success("✅ ¡Gracias! En breve recibirás tu cotización por email.")
-            # mostrar debug SOLO si ?debug=1
-            show_debug = False
+            # Debug sólo si ?debug=1
             try:
-                show_debug = st.query_params.get("debug", ["0"])[0] == "1"
+                if st.query_params.get("debug", ["0"])[0] == "1":
+                    with st.expander("Payload enviado (debug)"):
+                        st.json(payload)
             except Exception:
                 pass
-            if show_debug:
-                with st.expander("Payload enviado (debug)"):
-                    st.json(payload)
-            # reset y recargar limpio
             reset_form_state()
             st.rerun()
         else:

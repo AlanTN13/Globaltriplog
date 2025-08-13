@@ -10,15 +10,46 @@ import streamlit as st
 st.set_page_config(page_title="Cotización GlobalTrip", page_icon="🧮", layout="wide")
 st.markdown("""
 <style>
+  /* Paleta pastel y UI suave */
+  :root { --gt-surface:#f9fbff; --gt-border:#e6eef7; --gt-text:#0b2540; --gt-muted:#5d6b7c;
+          --gt-primary:#e9f5ff; --gt-primary-border:#c6e3f7; --gt-primary-hover:#dff0ff; }
+
   .hero{
-    background:linear-gradient(90deg,rgba(11,123,214,.12),rgba(11,123,214,.05));
-    border:1px solid rgba(255,255,255,.06);
-    border-radius:16px;padding:18px 20px;margin-bottom:14px
+    background:linear-gradient(90deg, #eef7ff 0%, #fafcff 100%);
+    border:1px solid var(--gt-border);
+    border-radius:16px; padding:18px 20px; margin-bottom:14px
   }
-  .hero h1{margin:0;font-size:28px}
-  .sub{color:#b9c2cf;margin-top:6px}
-  .card{border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:16px; margin-bottom:12px;}
-  .card h3{margin:0 0 12px 0}
+  .hero h1{margin:0; font-size:28px; color:var(--gt-text)}
+  .sub{color:var(--gt-muted); margin-top:6px}
+
+  .card{
+    border:1px solid var(--gt-border);
+    background:#ffffffaa;
+    border-radius:14px; padding:16px; margin-bottom:12px;
+  }
+  .card h3{margin:0 0 12px 0; color:var(--gt-text)}
+
+  /* Botones más pasteles */
+  div.stButton > button[kind="primary"]{
+    background:var(--gt-primary) !important;
+    color:var(--gt-text) !important;
+    border:1px solid var(--gt-primary-border) !important;
+  }
+  div.stButton > button[kind="primary"]:hover{
+    background:var(--gt-primary-hover) !important;
+    border-color:var(--gt-primary-border) !important;
+  }
+  div.stButton > button{
+    background:#f5f7fb !important;
+    color:var(--gt-text) !important;
+    border:1px solid var(--gt-border) !important;
+  }
+  div.stButton > button:hover{
+    background:#eef3fb !important;
+  }
+
+  /* Métricas */
+  [data-testid="stMetricValue"]{ color:var(--gt-text) }
 </style>
 """, unsafe_allow_html=True)
 
@@ -75,10 +106,7 @@ def post_to_automation(payload: dict) -> tuple[bool, str]:
     return ok, (r.text or str(r.status_code))
 
 def reset_form_state():
-    """
-    Limpia keys de widgets. En el próximo rerun se recrean con defaults.
-    (Evita StreamlitAPIException por setear widgets post-submit.)
-    """
+    """Limpia keys de widgets para recrear con defaults al próximo rerun."""
     for k in [
         "bultos_df",
         "peso_bruto",
@@ -97,20 +125,20 @@ def df_for_payload(df_internal: pd.DataFrame) -> list[dict]:
     df = df_internal.rename(columns={**COLS, PESO_VOL_COL: "Peso vol. (kg)"})
     return df.to_dict(orient="records")
 
-# ========================= Modal de “gracias” =========================
-@st.dialog("¡Solicitud enviada!")
+# ========================= Modal (Opción B, pastel) =========================
+@st.dialog("¡Listo!")
 def _thanks_dialog():
-    email_destino = st.session_state.get("_last_email", "")
-    st.success(f"Gracias por tu consulta. En breve te enviaremos la cotización a **{email_destino}**.")
-    st.caption("Si no lo ves en unos minutos, revisá la carpeta de Spam/Promociones.")
+    email_destino = st.session_state.get("_last_email", st.session_state.get("email", "tu email"))
+    st.write(f"Recibimos tu solicitud. En breve te llegará la cotización a **{email_destino}**.")
+    st.caption("Podés cargar otra si querés.")
 
-    col_ok, col_cancel = st.columns(2)
-    with col_ok:
-        if st.button("Aceptar y limpiar", type="primary", use_container_width=True):
+    c1, c2 = st.columns(2)
+    with c1:
+        if st.button("➕ Cargar otra cotización", type="primary", use_container_width=True):
             reset_form_state()
             st.session_state["show_thanks"] = False
             st.rerun()
-    with col_cancel:
+    with c2:
         if st.button("Cerrar", use_container_width=True):
             st.session_state["show_thanks"] = False
             st.rerun()
@@ -162,13 +190,11 @@ st.text_input("Link del producto o ficha técnica (Alibaba, Amazon, etc.)*",
               key="link", placeholder="https://...")
 st.markdown('</div>', unsafe_allow_html=True)
 
-# ========================= Bultos (tabla sin reruns forzados) =========================
+# ========================= Bultos (tabla) =========================
 st.markdown("### Bultos")
 st.caption("Ingresá por bulto: cantidad y dimensiones en **cm**. El peso volumétrico se calcula solo.")
 
-# DF actual (persistente en sesión)
 current = st.session_state.bultos_df.copy()
-# Muestro el editor con una columna calculada bloqueada
 to_show = compute_peso_vol(current).copy()
 
 edited_raw = st.data_editor(
@@ -188,7 +214,7 @@ edited_raw = st.data_editor(
     key="editor_bultos",
 )
 
-# Normalizo campos editables y los guardo en sesión (sin st.rerun manual)
+# Normalizo y guardo en sesión (sin forzar reruns)
 base_cols = ["cantidad", "ancho_cm", "alto_cm", "largo_cm"]
 edited_clean = edited_raw[base_cols].copy()
 edited_clean["cantidad"] = edited_clean["cantidad"].fillna(0).astype(int)
@@ -196,7 +222,7 @@ for k in ["ancho_cm", "alto_cm", "largo_cm"]:
     edited_clean[k] = edited_clean[k].fillna(0).astype(float)
 st.session_state.bultos_df = edited_clean
 
-# Calculo totales a partir de lo editado
+# Totales (se recalculan en cada rerun normal de Streamlit)
 calc_df = compute_peso_vol(edited_clean)
 total_peso_vol = round(calc_df[PESO_VOL_COL].sum(), 2)
 
@@ -277,7 +303,6 @@ if submit:
         with st.spinner("Enviando…"):
             ok, msg = post_to_automation(payload)
         if ok:
-            # Abrimos modal de gracias: limpia sólo al aceptar
             st.session_state["_last_email"] = st.session_state.email
             st.session_state["show_thanks"] = True
             st.rerun()

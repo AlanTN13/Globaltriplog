@@ -11,9 +11,12 @@ st.set_page_config(page_title="Cotización GlobalTrip", page_icon="🧮", layout
 st.markdown("""
 <style>
   /* Paleta pastel y UI suave */
-  :root { --gt-surface:#f9fbff; --gt-border:#e6eef7; --gt-text:#0b2540; --gt-muted:#5d6b7c;
-          --gt-primary:#e9f5ff; --gt-primary-border:#c6e3f7; --gt-primary-hover:#dff0ff; }
+  :root {
+    --gt-surface:#f9fbff; --gt-border:#e6eef7; --gt-text:#0b2540; --gt-muted:#5d6b7c;
+    --gt-primary:#e9f5ff; --gt-primary-border:#c6e3f7; --gt-primary-hover:#dff0ff;
+  }
 
+  /* Hero */
   .hero{
     background:linear-gradient(90deg, #eef7ff 0%, #fafcff 100%);
     border:1px solid var(--gt-border);
@@ -22,6 +25,7 @@ st.markdown("""
   .hero h1{margin:0; font-size:28px; color:var(--gt-text)}
   .sub{color:var(--gt-muted); margin-top:6px}
 
+  /* Cards */
   .card{
     border:1px solid var(--gt-border);
     background:#ffffffaa;
@@ -34,6 +38,8 @@ st.markdown("""
     background:var(--gt-primary) !important;
     color:var(--gt-text) !important;
     border:1px solid var(--gt-primary-border) !important;
+    border-radius: 9999px !important;   /* píldora */
+    padding: 0.6rem 1rem !important;
   }
   div.stButton > button[kind="primary"]:hover{
     background:var(--gt-primary-hover) !important;
@@ -43,13 +49,15 @@ st.markdown("""
     background:#f5f7fb !important;
     color:var(--gt-text) !important;
     border:1px solid var(--gt-border) !important;
+    border-radius: 10px !important;
   }
   div.stButton > button:hover{
     background:#eef3fb !important;
   }
 
-  /* Métricas */
-  [data-testid="stMetricValue"]{ color:var(--gt-text) }
+  /* Métricas en blanco (número + etiqueta) */
+  [data-testid="stMetricValue"]{ color:#ffffff !important; text-shadow:none !important; }
+  [data-testid="stMetricLabel"]{ color:#ffffff !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -106,7 +114,7 @@ def post_to_automation(payload: dict) -> tuple[bool, str]:
     return ok, (r.text or str(r.status_code))
 
 def reset_form_state():
-    """Limpia keys de widgets para recrear con defaults al próximo rerun."""
+    """Limpia keys para recrear con defaults al próximo rerun."""
     for k in [
         "bultos_df",
         "peso_bruto",
@@ -125,7 +133,7 @@ def df_for_payload(df_internal: pd.DataFrame) -> list[dict]:
     df = df_internal.rename(columns={**COLS, PESO_VOL_COL: "Peso vol. (kg)"})
     return df.to_dict(orient="records")
 
-# ========================= Modal (Opción B, pastel) =========================
+# ========================= Modal (Opción B) =========================
 @st.dialog("¡Listo!")
 def _thanks_dialog():
     email_destino = st.session_state.get("_last_email", st.session_state.get("email", "tu email"))
@@ -147,7 +155,7 @@ def _thanks_dialog():
 st.markdown("""
 <div class="hero">
   <h1>🧮 Cotización de Envío por Courier</h1>
-  <div class="sub">Completá tus datos y la información del envío. Te enviaremos la cotización por email.</div>
+  <div class="sub">Completá tus datos y medidas. Te mandamos la cotización por email.</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -192,6 +200,7 @@ st.markdown('</div>', unsafe_allow_html=True)
 
 # ========================= Bultos (tabla) =========================
 st.markdown("### Bultos")
+st.caption("Tip: usá el botón “+” al final de la tabla para agregar más bultos.")
 st.caption("Ingresá por bulto: cantidad y dimensiones en **cm**. El peso volumétrico se calcula solo.")
 
 current = st.session_state.bultos_df.copy()
@@ -239,6 +248,8 @@ with st.form("cotizacion_form"):
     with p3:
         peso_aplicable = max(st.session_state.peso_bruto, total_peso_vol)
         st.metric("Peso aplicable (kg) 🔒", f"{peso_aplicable:.2f}")
+
+    st.caption("El **peso aplicable** es el mayor entre el volumétrico y el bruto.")
 
     st.markdown("### Valor de la mercadería")
     st.number_input("Valor de la mercadería (USD)", min_value=0.0,
@@ -309,3 +320,6 @@ if submit:
         else:
             st.error("No pudimos enviar tu solicitud.")
             st.code(msg)
+
+# ========================= Footer mini privacidad =========================
+st.caption("Usamos estos datos sólo para generar tu cotización. No compartimos tu información.")

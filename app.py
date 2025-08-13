@@ -6,6 +6,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 # -------------------- Config --------------------
 st.set_page_config(page_title="Cotizador GlobalTrip", page_icon="📦", layout="wide")
@@ -152,12 +153,12 @@ div.stButton > button:hover{
 .gt-modal h3{ margin:0 0 8px 0; font-size:28px; }
 .gt-modal p{ margin:6px 0; }
 .gt-actions{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px; }
-a.gt-btn{
-  display:inline-block; text-align:center; text-decoration:none;
+.gt-btn{
+  display:inline-block; text-align:center; text-decoration:none; cursor:pointer;
   border:1.5px solid var(--soft-border); border-radius:16px;
   background:#f0f7ff; color:var(--brand); padding:12px 16px;
 }
-a.gt-btn:hover{ filter:brightness(0.98); }
+.gt-btn:hover{ filter:brightness(0.98); }
 </style>
 """, unsafe_allow_html=True)
 
@@ -303,10 +304,13 @@ st.session_state.df, total_peso_vol = compute_vol(edited)
 st.write("")
 st.subheader("Pesos")
 m1, mMid, m2 = st.columns([1.1, 1.1, 1.1])
-with m1:  st.metric("Peso volumétrico (kg) 🔒", f"{total_peso_vol:,.2f}")
+with m1:
+    st.metric("Peso volumétrico (kg) 🔒", f"{total_peso_vol:,.2f}")
 with mMid:
+    # acepta hasta 6 decimales sin mensajes rojos
     st.session_state.peso_bruto = st.number_input(
-        "Peso bruto (kg)", min_value=0.0, step=0.10, value=float(st.session_state.peso_bruto), format="%.2f"
+        "Peso bruto (kg)", min_value=0.0, step=0.000001,
+        value=float(st.session_state.peso_bruto), format="%.6f"
     )
 with m2:
     peso_aplicable = max(total_peso_vol, float(st.session_state.peso_bruto))
@@ -315,7 +319,8 @@ with m2:
 # Valor mercadería
 st.subheader("Valor de la mercadería")
 st.session_state.valor_mercaderia = st.number_input(
-    "Valor de la mercadería (USD)", min_value=0.0, step=0.01, value=float(st.session_state.valor_mercaderia), format="%.2f"
+    "Valor de la mercadería (USD)", min_value=0.0, step=0.01,
+    value=float(st.session_state.valor_mercaderia), format="%.2f"
 )
 
 # Enviar
@@ -340,7 +345,9 @@ if btn:
         payload = {
             "timestamp": datetime.utcnow().isoformat(),
             "origen": "streamlit-cotizador",
-            "factor_vol": FACTOR_VOL,
+            "factor_vol": FA
+
+CTOR_VOL,
             "contacto": {
                 "nombre": st.session_state.nombre.strip(),
                 "email": st.session_state.email.strip(),
@@ -359,19 +366,14 @@ if btn:
             },
             "valor_mercaderia_usd": float(st.session_state.valor_mercaderia)
         }
-        # Enviar a n8n (silencioso si falta secret)
-        try:
-            url = st.secrets.get("N8N_WEBHOOK_URL", os.getenv("N8N_WEBHOOK_URL",""))
-            token = st.secrets.get("N8N_TOKEN", os.getenv("N8N_TOKEN",""))
-        except Exception:
-            url, token = os.getenv("N8N_WEBHOOK_URL",""), os.getenv("N8N_TOKEN","")
+        # webhook (best-effort)
+        url = st.secrets.get("N8N_WEBHOOK_URL", os.getenv("N8N_WEBHOOK_URL",""))
+        token = st.secrets.get("N8N_TOKEN", os.getenv("N8N_TOKEN",""))
         if url:
             headers = {"Content-Type":"application/json"}
             if token: headers["Authorization"] = f"Bearer {token}"
-            try:
-                requests.post(url, headers=headers, data=json.dumps(payload), timeout=15)
-            except Exception:
-                pass
+            try: requests.post(url, headers=headers, data=json.dumps(payload), timeout=15)
+            except Exception: pass
 
         st.session_state.last_submit_ok = True
         st.session_state.show_dialog = True
@@ -396,20 +398,28 @@ if st.session_state.get("show_dialog", False):
                 if st.button("Cerrar", use_container_width=True):
                     st.session_state.show_dialog = False; _rerun()
     else:
-        # Overlay HTML con enlaces que accionan por query params (funciona en todas las versiones)
-        st.markdown(
-            f"""
+        # Overlay HTML con JS (misma pestaña, sin abrir tab nuevo)
+        components.html(f"""
             <div class="gt-overlay">
               <div class="gt-modal">
                 <h3>¡Listo!</h3>
                 <p>Recibimos tu solicitud. En breve te llegará la cotización a {email_html}.</p>
                 <p style="opacity:.7;">Podés cargar otra si querés.</p>
                 <div class="gt-actions">
-                  <a class="gt-btn" href="?gt=reset">➕ Cargar otra cotización</a>
-                  <a class="gt-btn" href="?gt=close">Cerrar</a>
+                  <div id="gt-reset" class="gt-btn">➕ Cargar otra cotización</div>
+                  <div id="gt-close" class="gt-btn">Cerrar</div>
                 </div>
               </div>
             </div>
-            """,
-            unsafe_allow_html=True
-        )
+            <script>
+            (function(){
+              function setParam(key,val){ 
+                const u = new URL(window.location.href);
+                if(val===null) u.searchParams.delete(key); else u.searchParams.set(key,val);
+                window.location.replace(u.toString()); /* misma pestaña */
+              }
+              document.getElementById('gt-reset').onclick = function(e){ e.preventDefault(); setParam('gt','reset'); };
+              document.getElementById('gt-close').onclick  = function(e){ e.preventDefault(); setParam('gt','close');  };
+            })();
+            </script>
+        """, height=10, scrolling=False)

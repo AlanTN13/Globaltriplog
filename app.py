@@ -8,8 +8,7 @@ import streamlit as st
 
 # ================== Config ==================
 st.set_page_config(page_title="Cotización GlobalTrip", page_icon="🧮", layout="wide")
-st.markdown(
-    """
+st.markdown("""
 <style>
   .hero{
     background:linear-gradient(90deg,rgba(11,123,214,.12),rgba(11,123,214,.05));
@@ -19,56 +18,43 @@ st.markdown(
   .hero h1{margin:0;font-size:28px}
   .sub{color:#b9c2cf;margin-top:6px}
 </style>
-""",
-    unsafe_allow_html=True,
-)
+""", unsafe_allow_html=True)
 
 FACTOR_VOL = 5000  # cm³/kg
-MAX_ROWS = 20
+MAX_ROWS   = 20
 
 # ================== Helpers ==================
 def is_email(x: str) -> bool:
     return bool(re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", x or ""))
 
-
 def is_phone(x: str) -> bool:
     x = (x or "").strip().replace(" ", "").replace("-", "")
     return x.isdigit() and 6 <= len(x) <= 20
 
-
 def is_url(x: str) -> bool:
     return bool(re.match(r"^https?://.+", (x or "").strip()))
 
-
 def peso_vol_row(q, a, h, l, factor=FACTOR_VOL) -> float:
     try:
-        q = int(q)
-        a = float(a)
-        h = float(h)
-        l = float(l)
+        q = int(q); a = float(a); h = float(h); l = float(l)
         if q <= 0 or a <= 0 or h <= 0 or l <= 0:
             return 0.0
         return round(q * (a * h * l) / factor, 2)
     except Exception:
         return 0.0
 
-
 def add_peso_vol(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df["Peso vol. (kg) 🔒"] = df.apply(
-        lambda r: peso_vol_row(
-            r["Cantidad de bultos"], r["Ancho (cm)"], r["Alto (cm)"], r["Largo (cm)"]
-        ),
-        axis=1,
+        lambda r: peso_vol_row(r["Cantidad de bultos"], r["Ancho (cm)"], r["Alto (cm)"], r["Largo (cm)"]),
+        axis=1
     )
     return df
-
 
 def default_bultos_df(n_rows: int = 8) -> pd.DataFrame:
     return pd.DataFrame(
         [{"Cantidad de bultos": 0, "Ancho (cm)": 0, "Alto (cm)": 0, "Largo (cm)": 0} for _ in range(n_rows)]
     )
-
 
 def post_to_automation(payload: dict) -> tuple[bool, str]:
     url = st.secrets.get("N8N_WEBHOOK_URL", "")
@@ -82,7 +68,6 @@ def post_to_automation(payload: dict) -> tuple[bool, str]:
     ok = 200 <= r.status_code < 300
     return ok, r.text or str(r.status_code)
 
-
 def reset_form_state():
     st.session_state.bultos_df = default_bultos_df()
     st.session_state.peso_bruto = 0.0
@@ -94,34 +79,39 @@ def reset_form_state():
     st.session_state.descripcion = ""
     st.session_state.link = ""
 
-
 # ================== Header ==================
-st.markdown(
-    """
+st.markdown("""
 <div class="hero">
   <h1>🧮 Cotización de Envío por Courier</h1>
   <div class="sub">Completá tus datos y la información del envío. Te enviaremos la cotización por email.</div>
 </div>
-""",
-    unsafe_allow_html=True,
-)
+""", unsafe_allow_html=True)
 
 # ================== Estado inicial ==================
 if "bultos_df" not in st.session_state:
     reset_form_state()
 
-# ================== Datos de contacto (ARRIBA DE LA TABLA) ==================
-st.markdown("### Datos de contacto")
-c1, c2, c3, c4 = st.columns([1.1, 1.1, 0.9, 0.9])
-with c1:
+# ================== Datos de contacto + producto (una sola sección) ==================
+st.markdown("### Datos de contacto y del producto")
+
+# fila 1: nombre / email / teléfono / cliente?
+r1c1, r1c2, r1c3, r1c4 = st.columns([1.1, 1.1, 0.9, 0.9])
+with r1c1:
     st.text_input("Nombre completo*", key="nombre", placeholder="Ej: Juan Pérez")
-with c2:
+with r1c2:
     st.text_input("Correo electrónico*", key="email", placeholder="ejemplo@email.com")
-with c3:
+with r1c3:
     st.text_input("Teléfono*", key="telefono", placeholder="Ej: 11 5555 5555")
-with c4:
+with r1c4:
     st.markdown("**¿Cliente/alumno de Global Trip?**")
     st.radio("", ["No", "Sí"], key="es_cliente", horizontal=True)
+
+# fila 2: descripción y link
+r2c1, r2c2 = st.columns([1.5, 1.5])
+with r2c1:
+    st.text_area("Descripción del producto*", key="descripcion", placeholder='Ej: "Máquina selladora de bolsas"')
+with r2c2:
+    st.text_input("Link del producto o ficha técnica (Alibaba, Amazon, etc.)*", key="link", placeholder="https://...")
 
 # ================== BULTOS (fuera del form para recalcular en vivo) ==================
 st.markdown("### Bultos")
@@ -136,17 +126,15 @@ edited = st.data_editor(
     hide_index=True,
     column_config={
         "Cantidad de bultos": st.column_config.NumberColumn("Cantidad de bultos", step=1, min_value=0),
-        "Ancho (cm)": st.column_config.NumberColumn("Ancho (cm)", step=1, min_value=0),
-        "Alto (cm)": st.column_config.NumberColumn("Alto (cm)", step=1, min_value=0),
-        "Largo (cm)": st.column_config.NumberColumn("Largo (cm)", step=1, min_value=0),
-        "Peso vol. (kg) 🔒": st.column_config.NumberColumn(
-            "Peso vol. (kg) 🔒", step=0.01, disabled=True, help="Se calcula automáticamente"
-        ),
+        "Ancho (cm)":       st.column_config.NumberColumn("Ancho (cm)", step=1, min_value=0),
+        "Alto (cm)":        st.column_config.NumberColumn("Alto (cm)",  step=1, min_value=0),
+        "Largo (cm)":       st.column_config.NumberColumn("Largo (cm)", step=1, min_value=0),
+        "Peso vol. (kg) 🔒": st.column_config.NumberColumn("Peso vol. (kg) 🔒", step=0.01, disabled=True, help="Se calcula automáticamente"),
     },
     key="editor_bultos",
 )
 
-# Normalizar, recalcular y guardar
+# normalizar, recalcular y guardar
 edited = edited.copy()
 edited["Cantidad de bultos"] = edited["Cantidad de bultos"].fillna(0).astype(int)
 for col in ["Ancho (cm)", "Alto (cm)", "Largo (cm)"]:
@@ -186,15 +174,6 @@ with st.form("cotizacion_form"):
         key="valor_mercaderia",
     )
 
-    # --- Datos del producto ---
-    st.markdown("### Datos del producto o paquete")
-    st.text_area("Descripción del producto*", key="descripcion", placeholder='Ej: "Máquina selladora de bolsas"')
-    st.text_input(
-        "Link del producto o ficha técnica (Alibaba, Amazon, etc.)*",
-        key="link",
-        placeholder="https://...",
-    )
-
     submit = st.form_submit_button("📨 Solicitar cotización")
 
 # ================== Validación + Envío ==================
@@ -211,17 +190,16 @@ def validar_form() -> list[str]:
     if not is_url(st.session_state.link):
         errs.append("Ingresá un link válido (debe empezar con http:// o https://).")
     valid_rows = edited[
-        (edited["Cantidad de bultos"] > 0)
-        & (edited["Ancho (cm)"] > 0)
-        & (edited["Alto (cm)"] > 0)
-        & (edited["Largo (cm)"] > 0)
+        (edited["Cantidad de bultos"] > 0) &
+        (edited["Ancho (cm)"] > 0) &
+        (edited["Alto (cm)"] > 0) &
+        (edited["Largo (cm)"] > 0)
     ]
     if valid_rows.empty:
         errs.append("Agregá al menos un bulto con medidas > 0.")
     if len(edited) > MAX_ROWS:
         errs.append(f"Máximo {MAX_ROWS} filas de bultos.")
     return errs
-
 
 if submit:
     errores = validar_form()
@@ -236,7 +214,7 @@ if submit:
                 "nombre": st.session_state.nombre.strip(),
                 "email": st.session_state.email.strip(),
                 "telefono": st.session_state.telefono.strip(),
-                "es_cliente": st.session_state.es_cliente,
+                "es_cliente": st.session_state.es_cliente,  # "No" o "Sí"
             },
             "producto": {
                 "descripcion": st.session_state.descripcion.strip(),
@@ -255,10 +233,10 @@ if submit:
             ok, msg = post_to_automation(payload)
         if ok:
             st.success("✅ ¡Gracias! En breve recibirás tu cotización por email.")
-            # Debug sólo si ?debug=1
+            # Mostrar debug sólo si ?debug=1
             debug_flag = False
             try:
-                debug_flag = st.query_params.get("debug", ["0"])[0] == "1"  # streamlit >=1.30
+                debug_flag = st.query_params.get("debug", ["0"])[0] == "1"
             except Exception:
                 try:
                     debug_flag = st.experimental_get_query_params().get("debug", ["0"])[0] == "1"

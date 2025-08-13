@@ -1,3 +1,4 @@
+# app.py
 import re
 from datetime import datetime
 
@@ -5,22 +6,20 @@ import pandas as pd
 import requests
 import streamlit as st
 
-# ================== Tema ==================
+# ================== Config básica ==================
 st.set_page_config(page_title="Cotización GlobalTrip", page_icon="🧮", layout="wide")
+
 st.markdown("""
 <style>
   .hero{background:linear-gradient(90deg,rgba(11,123,214,.12),rgba(11,123,214,.05));
         border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:18px 20px;margin-bottom:14px}
   .hero h1{margin:0;font-size:28px}
   .sub{color:#b9c2cf;margin-top:6px}
-  /* lectura más clara para campos bloqueados */
-  .readonly input[disabled]{opacity:.55; cursor:not-allowed; background:#1b1f2a!important;}
-  .readonly label{opacity:.8}
 </style>
 """, unsafe_allow_html=True)
 
-# ================== Negocio ==================
-FACTOR_VOL = 5000   # cm³/kg
+# ================== Parámetros negocio ==================
+FACTOR_VOL = 5000   # cm³/kg (coincide con tu planilla)
 MAX_ROWS   = 20
 
 # ================== Helpers ==================
@@ -51,13 +50,21 @@ def post_to_n8n(payload: dict) -> tuple[bool, str]:
     url = st.secrets.get("N8N_WEBHOOK_URL", "")
     token = st.secrets.get("N8N_TOKEN", "")
     if not url:
-        return False, "Falta configurar N8N_WEBHOOK_URL en *Secrets* (TOML)."
+        return False, "Falta configurar N8N_WEBHOOK_URL en *Settings → Secrets* (TOML)."
     headers = {"Content-Type": "application/json"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
     r = requests.post(url, json=payload, headers=headers, timeout=20)
     ok = 200 <= r.status_code < 300
     return ok, r.text or str(r.status_code)
+
+# ================== Header ==================
+st.markdown("""
+<div class="hero">
+  <h1>🧮 Cotización de Envío por Courier</h1>
+  <div class="sub">Completá tus datos y la información del envío. Te enviaremos la cotización por email.</div>
+</div>
+""", unsafe_allow_html=True)
 
 # ================== Estado inicial tabla ==================
 if "bultos_df" not in st.session_state:
@@ -68,14 +75,6 @@ if "bultos_df" not in st.session_state:
             *[{"Cantidad de bultos": 0, "Ancho (cm)": 0, "Alto (cm)": 0, "Largo (cm)": 0} for _ in range(6)]
         ]
     )
-
-# ================== Header ==================
-st.markdown("""
-<div class="hero">
-  <h1>🧮 Cotización de Envío por Courier</h1>
-  <div class="sub">Completá tus datos y la información del envío. Te enviaremos la cotización por email.</div>
-</div>
-""", unsafe_allow_html=True)
 
 # ================== FORM ==================
 with st.form("cotizacion_form"):
@@ -91,11 +90,10 @@ with st.form("cotizacion_form"):
 
     es_cliente = st.radio("¿Sos alumno o cliente de Global Trip?", ["Sí", "No"], horizontal=True)
 
-    # --- Bultos (tabla única, sin valor por fila) ---
+    # --- Bultos (tabla única; todo editable salvo Peso vol.) ---
     st.markdown("### Bultos")
     st.caption("Ingresá por bulto: cantidad y dimensiones en **cm**. El peso volumétrico se calcula solo.")
-    df_show = st.session_state.bultos_df.copy()
-    df_show = add_peso_vol(df_show)  # calcula Peso vol. antes de mostrar
+    df_show = add_peso_vol(st.session_state.bultos_df.copy())
 
     edited = st.data_editor(
         df_show,
@@ -122,25 +120,36 @@ with st.form("cotizacion_form"):
 
     total_peso_vol = round(edited["Peso vol. (kg) 🔒"].sum(), 2)
 
-    # --- Pesos (alineados) ---
+    # --- Pesos (alineados: métricas bloqueadas + input editable) ---
     st.markdown("### Pesos")
-    colA, colB, colC = st.columns([1, 1, 1])
-    with colA:
-        st.markdown('<div class="readonly">', unsafe_allow_html=True)
-        st.number_input("Peso volumétrico (kg) 🔒", value=float(total_peso_vol), step=0.01, disabled=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-    with colB:
-        peso_bruto = st.number_input("Peso bruto (kg)", min_value=0.0, value=0.0, step=0.1)
-    with colC:
+    p1, p2, p3 = st.columns(3)
+    with p1:
+        st.metric("Peso volumétrico (kg) 🔒", f"{total_peso_vol:.2f}")
+    with p2:
+        peso_bruto = st.number_input(
+            "Peso bruto (kg)",
+            min_value=0.0,
+            value=float(st.session_state.get("peso_bruto", 0.0)),
+            step=0.1,
+            format="%.2f",
+            key="peso_bruto_input",
+        )
+        st.session_state.peso_bruto = peso_bruto
+    with p3:
         peso_aplicable = max(peso_bruto, total_peso_vol)
-        st.markdown('<div class="readonly">', unsafe_allow_html=True)
-        st.number_input("Peso aplicable (kg) 🔒", value=float(peso_aplicable), step=0.01, disabled=True,
-                        help="Máximo entre peso bruto y volumétrico")
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.metric("Peso aplicable (kg) 🔒", f"{peso_aplicable:.2f}")
 
     # --- Valor general de la compra ---
     st.markdown("### Valor de la mercadería")
-    valor_mercaderia = st.number_input("Valor de la mercadería (USD)", min_value=0.0, value=0.0, step=1.0)
+    valor_mercaderia = st.number_input(
+        "Valor de la mercadería (USD)",
+        min_value=0.0,
+        value=float(st.session_state.get("valor_mercaderia", 0.0)),
+        step=1.0,
+        format="%.2f",
+        key="valor_mercaderia_input",
+    )
+    st.session_state.valor_mercaderia = valor_mercaderia
 
     # --- Enviar ---
     submit = st.form_submit_button("📨 Solicitar cotización")
@@ -184,9 +193,9 @@ if submit:
             "bultos": edited.to_dict(orient="records"),
             "totales": {
                 "peso_vol_total": total_peso_vol,
-                "peso_bruto": peso_bruto,
-                "peso_aplicable": peso_aplicable,
-                "valor_mercaderia": valor_mercaderia,  # valor general
+                "peso_bruto": st.session_state.get("peso_bruto", 0.0),
+                "peso_aplicable": max(st.session_state.get("peso_bruto", 0.0), total_peso_vol),
+                "valor_mercaderia": st.session_state.get("valor_mercaderia", 0.0),
                 "factor_vol": FACTOR_VOL,
             },
         }

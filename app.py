@@ -11,26 +11,23 @@ import streamlit.components.v1 as components
 # -------------------- Config --------------------
 st.set_page_config(page_title="Cotizador GlobalTrip", page_icon="📦", layout="wide")
 
-# -------------------- Styles (TODO texto #000033) --------------------
+# -------------------- Styles --------------------
 st.markdown("""
 <style>
 :root{
-  --brand: #000033;          /* color pedido */
+  --brand: #000033;
   --brand-soft: #eaf1ff;
   --soft-bg: #f4f9fb;
   --soft-card: #ffffff;
   --soft-border: #dfe7ef;
-  --soft-text: #000033;      /* texto = #000033 */
-  --soft-muted: #000033;
+  --soft-text: #000033;
   --soft-focus: rgba(0, 0, 51, .2);
 }
 html, body, [data-testid="stAppViewContainer"] { background: var(--soft-bg) !important; }
 header, div[data-testid="stToolbar"]{ display:none !important; }
 
-/* Forzar TODO texto #000033 */
+/* TODO texto #000033 */
 body, [data-testid="stAppViewContainer"]{ color: var(--brand) !important; }
-body, [data-testid="stAppViewContainer"] p, span, label, div, li,
-h1, h2, h3, h4, h5, h6, a, small, strong, em, th, td,
 div[data-testid="stMarkdownContainer"] * { color: var(--brand) !important; }
 
 /* Card */
@@ -45,11 +42,7 @@ div[data-testid="stMarkdownContainer"] * { color: var(--brand) !important; }
 /* Labels */
 div[data-testid="stMetricLabel"],
 div[data-testid="stCaptionContainer"],
-div[data-testid="stWidgetLabel"] p,
-div[data-testid="stWidgetLabel"] label,
-div[data-testid="stRadio"] label,
-section[aria-label] > div > label,
-div[data-baseweb="textarea"] label { color: var(--brand) !important; }
+div[data-testid="stWidgetLabel"] *, div[data-baseweb="textarea"] label { color: var(--brand) !important; }
 
 /* Inputs */
 div[data-testid="stTextInput"] input,
@@ -71,9 +64,7 @@ div[data-testid="stTextArea"] textarea:focus{
 }
 div[data-testid="stTextInput"] input::placeholder,
 div[data-testid="stNumberInput"] input::placeholder,
-div[data-testid="stTextArea"] textarea::placeholder{
-  color:#000033 !important; opacity:1 !important;
-}
+div[data-testid="stTextArea"] textarea::placeholder{ color:#000033 !important; opacity:1 !important; }
 
 /* Radio chips */
 div[data-testid="stRadio"] label{
@@ -99,71 +90,34 @@ div.stButton > button{
   padding:14px 18px !important;
   box-shadow:0 10px 22px rgba(17,24,39,.09) !important;
 }
-div.stButton > button:hover{
-  border-color:#c7d4e2 !important;
-  box-shadow:0 12px 26px rgba(17,24,39,.12) !important;
-}
+div.stButton > button:hover{ border-color:#c7d4e2 !important; box-shadow:0 12px 26px rgba(17,24,39,.12) !important; }
 
 /* Data editor */
 [data-testid="stDataFrame"]{
-  background:#fff !important;
-  border:1.5px solid var(--soft-border) !important;
-  border-radius:16px !important;
-  box-shadow:0 8px 18px rgba(17,24,39,.07) !important;
-  overflow:hidden;
+  background:#fff !important; border:1.5px solid var(--soft-border) !important;
+  border-radius:16px !important; box-shadow:0 8px 18px rgba(17,24,39,.07) !important; overflow:hidden;
 }
-[data-testid="stDataFrame"] div[role="grid"]{ background:#fff !important; }
-[data-testid="stDataFrame"] div[role="columnheader"]{
-  background: var(--brand-soft) !important;
-  color: var(--brand) !important;
-  border-bottom:1px solid var(--soft-border) !important;
-}
-[data-testid="stDataFrame"] div[role="cell"]{
-  background:#fff !important; color: var(--brand) !important;
-  border-color: var(--soft-border) !important;
-}
+[data-testid="stDataFrame"] div[role="columnheader"]{ background: var(--brand-soft) !important; color: var(--brand) !important; }
+[data-testid="stDataFrame"] div[role="cell"]{ background:#fff !important; color: var(--brand) !important; border-color: var(--soft-border) !important; }
 [data-testid="stDataFrame"] *::selection{ background: var(--soft-focus) !important; }
 [data-testid="stDataFrame"] .st-emotion-cache-1xarl3l { padding: 6px 10px !important; }
 
-/* ===== Modal (st.modal) ===== */
-[data-testid="stModal"] > div {
-  border:1.5px solid var(--soft-border);
-  border-radius:18px;
-  box-shadow:0 18px 40px rgba(17,24,39,.25);
-}
-[data-testid="stModal"] .stButton > button{
-  border:1.5px solid var(--soft-border) !important;
-  border-radius:16px !important;
-  background:#f0f7ff !important;
-  color:var(--brand) !important;
-  padding:14px 18px !important;
-}
-[data-testid="stModal"] .stButton > button:hover{ box-shadow:0 12px 26px rgba(17,24,39,.12) !important; }
+/* Modal nativo */
+[data-testid="stModal"] > div { border:1.5px solid var(--soft-border); border-radius:18px; box-shadow:0 18px 40px rgba(17,24,39,.25); }
+[data-testid="stModal"] .stButton > button{ border:1.5px solid var(--soft-border) !important; border-radius:16px !important; background:#f0f7ff !important; color:var(--brand) !important; }
 
-/* ===== Fallback overlay (sin st.modal) ===== */
-.gt-overlay{
-  position:fixed; inset:0; background:rgba(2,6,23,.45); z-index:9999;
-  display:flex; align-items:center; justify-content:center;
-}
-.gt-modal{
-  max-width:640px; width:92%; background:#fff; color:var(--brand);
-  border:1.5px solid var(--soft-border); border-radius:18px; padding:22px;
-  box-shadow:0 18px 40px rgba(17,24,39,.25);
-}
+/* Fallback overlay */
+.gt-overlay{ position:fixed; inset:0; background:rgba(2,6,23,.45); z-index:9999; display:flex; align-items:center; justify-content:center; }
+.gt-modal{ max-width:640px; width:92%; background:#fff; color:var(--brand); border:1.5px solid var(--soft-border); border-radius:18px; padding:22px; box-shadow:0 18px 40px rgba(17,24,39,.25); }
 .gt-modal h3{ margin:0 0 8px 0; font-size:28px; }
 .gt-modal p{ margin:6px 0; }
 .gt-actions{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px; }
-.gt-btn{
-  display:inline-block; text-align:center; text-decoration:none; cursor:pointer;
-  border:1.5px solid var(--soft-border); border-radius:16px;
-  background:#f0f7ff; color:var(--brand); padding:12px 16px;
-}
-.gt-btn:hover{ filter:brightness(0.98); }
+.gt-btn{ display:inline-block; text-align:center; text-decoration:none; cursor:pointer; border:1.5px solid var(--soft-border); border-radius:16px; background:#f0f7ff; color:var(--brand); padding:12px 16px; }
 </style>
 """, unsafe_allow_html=True)
 
 # -------------------- Constantes --------------------
-FACTOR_VOL = 5000   # cm->kg
+FACTOR_VOL = 5000
 DEFAULT_ROWS = 10
 
 # -------------------- Helpers --------------------
@@ -179,7 +133,8 @@ def init_state():
     for k, v in {
         "nombre":"", "email":"", "telefono":"",
         "es_cliente":"No", "descripcion":"", "link":"",
-        "peso_bruto":0.0, "valor_mercaderia":0.0,
+        "peso_bruto":0.0, "peso_bruto_raw":"0.000000",
+        "valor_mercaderia":0.0, "valor_mercaderia_raw":"0.00",
         "last_submit_ok":False, "show_dialog":False
     }.items():
         st.session_state.setdefault(k, v)
@@ -201,7 +156,9 @@ def reset_form():
     st.session_state.descripcion = ""
     st.session_state.link = ""
     st.session_state.peso_bruto = 0.0
+    st.session_state.peso_bruto_raw = "0.000000"
     st.session_state.valor_mercaderia = 0.0
+    st.session_state.valor_mercaderia_raw = "0.00"
     st.session_state.df = pd.DataFrame({
         "Cantidad de bultos": [0]*DEFAULT_ROWS,
         "Ancho (cm)": [0]*DEFAULT_ROWS,
@@ -228,25 +185,20 @@ def _rerun():
     if hasattr(st, "rerun"): st.rerun()
     else: st.experimental_rerun()
 
-# Query params helpers (compat nuevas/viejas)
 def _get_qs():
-    try:
-        return dict(st.query_params)
-    except Exception:
-        return st.experimental_get_query_params()
+    try: return dict(st.query_params)
+    except Exception: return st.experimental_get_query_params()
 
 def _set_qs(**kwargs):
     try:
         st.query_params.clear()
-        for k, v in kwargs.items():
-            st.query_params[k] = v
+        for k, v in kwargs.items(): st.query_params[k] = v
     except Exception:
         st.experimental_set_query_params(**kwargs)
 
 # -------------------- App --------------------
 init_state()
 
-# Acciones por query param del fallback
 qs = _get_qs()
 gt = qs.get("gt", [""])[0] if isinstance(qs.get("gt"), list) else qs.get("gt")
 if gt == "reset":
@@ -263,71 +215,76 @@ st.markdown("""
 """, unsafe_allow_html=True)
 st.write("")
 
-# Contacto + Producto
-st.subheader("Datos de contacto y del producto")
-c1,c2,c3,c4 = st.columns([1.1,1.1,1.0,0.9])
-with c1:
-    st.session_state.nombre = st.text_input("Nombre completo*", value=st.session_state.nombre, placeholder="Ej: Juan Pérez")
-with c2:
-    st.session_state.email = st.text_input("Correo electrónico*", value=st.session_state.email, placeholder="ejemplo@email.com")
-with c3:
-    st.session_state.telefono = st.text_input("Teléfono*", value=st.session_state.telefono, placeholder="Ej: 11 5555 5555")
-with c4:
-    st.session_state.es_cliente = st.radio("¿Cliente/alumno de Global Trip?", options=["No","Sí"], horizontal=True,
-                                           index=0 if st.session_state.es_cliente=="No" else 1)
+# ----------- FORM -----------
+with st.form("cot-form", clear_on_submit=False):
+    st.subheader("Datos de contacto y del producto")
+    c1,c2,c3,c4 = st.columns([1.1,1.1,1.0,0.9])
+    with c1:
+        st.session_state.nombre = st.text_input("Nombre completo*", value=st.session_state.nombre, placeholder="Ej: Juan Pérez")
+    with c2:
+        st.session_state.email = st.text_input("Correo electrónico*", value=st.session_state.email, placeholder="ejemplo@email.com")
+    with c3:
+        st.session_state.telefono = st.text_input("Teléfono*", value=st.session_state.telefono, placeholder="Ej: 11 5555 5555")
+    with c4:
+        st.session_state.es_cliente = st.radio("¿Cliente/alumno de Global Trip?", options=["No","Sí"], horizontal=True,
+                                               index=0 if st.session_state.es_cliente=="No" else 1)
 
-st.session_state.descripcion = st.text_area("Descripción del producto*", value=st.session_state.descripcion,
-                                            placeholder='Ej: "Máquina selladora de bolsas"')
-st.session_state.link = st.text_input("Link del producto o ficha técnica (Alibaba, Amazon, etc.)*",
-                                      value=st.session_state.link, placeholder="https://...")
+    st.session_state.descripcion = st.text_area("Descripción del producto*", value=st.session_state.descripcion,
+                                                placeholder='Ej: "Máquina selladora de bolsas"')
+    st.session_state.link = st.text_input("Link del producto o ficha técnica (Alibaba, Amazon, etc.)*",
+                                          value=st.session_state.link, placeholder="https://...")
 
-st.write("")
-st.subheader("Bultos")
-st.caption("Tip: usá el botón “+” al final de la tabla para agregar más bultos. Ingresá por bulto: cantidad y dimensiones en **cm**. El **peso volumétrico** se calcula solo.")
+    st.write("")
+    st.subheader("Bultos")
+    st.caption("Tip: usá el botón “+” al final de la tabla para agregar más bultos. Ingresá por bulto: cantidad y dimensiones en **cm**. El **peso volumétrico** se calcula solo.")
 
-# Editor ÚNICO
-col_cfg = {
-    "Cantidad de bultos": st.column_config.NumberColumn("Cantidad de bultos", min_value=0, step=1, help="Sólo números enteros"),
-    "Ancho (cm)": st.column_config.NumberColumn("Ancho (cm)", min_value=0, step=1),
-    "Alto (cm)": st.column_config.NumberColumn("Alto (cm)", min_value=0, step=1),
-    "Largo (cm)": st.column_config.NumberColumn("Largo (cm)", min_value=0, step=1),
-    "Peso vol. (kg)": st.column_config.NumberColumn("Peso vol. (kg)", step=0.01, disabled=True, help="Se calcula automáticamente"),
-}
-edited = st.data_editor(
-    st.session_state.df,
-    key="bultos_editor", num_rows="dynamic",
-    use_container_width=True, hide_index=True, column_config=col_cfg
-)
-st.session_state.df, total_peso_vol = compute_vol(edited)
-
-# Pesos
-st.write("")
-st.subheader("Pesos")
-m1, mMid, m2 = st.columns([1.1, 1.1, 1.1])
-with m1:
-    st.metric("Peso volumétrico (kg) 🔒", f"{total_peso_vol:,.2f}")
-with mMid:
-    # acepta hasta 6 decimales sin "Press Enter to apply"
-    st.session_state.peso_bruto = st.number_input(
-        "Peso bruto (kg)", min_value=0.0, step=0.000001,
-        value=float(st.session_state.peso_bruto), format="%.6f"
+    col_cfg = {
+        "Cantidad de bultos": st.column_config.NumberColumn("Cantidad de bultos", min_value=0, step=1, help="Sólo números enteros"),
+        "Ancho (cm)": st.column_config.NumberColumn("Ancho (cm)", min_value=0, step=1),
+        "Alto (cm)": st.column_config.NumberColumn("Alto (cm)", min_value=0, step=1),
+        "Largo (cm)": st.column_config.NumberColumn("Largo (cm)", min_value=0, step=1),
+        "Peso vol. (kg)": st.column_config.NumberColumn("Peso vol. (kg)", step=0.01, disabled=True, help="Se calcula automáticamente"),
+    }
+    edited = st.data_editor(
+        st.session_state.df, key="bultos_editor", num_rows="dynamic",
+        use_container_width=True, hide_index=True, column_config=col_cfg
     )
-with m2:
-    peso_aplicable = max(total_peso_vol, float(st.session_state.peso_bruto))
-    st.metric("Peso aplicable (kg) 🔒", f"{peso_aplicable:,.2f}")
+    st.session_state.df, total_peso_vol = compute_vol(edited)
 
-# Valor mercadería
-st.subheader("Valor de la mercadería")
-st.session_state.valor_mercaderia = st.number_input(
-    "Valor de la mercadería (USD)", min_value=0.0, step=0.01,
-    value=float(st.session_state.valor_mercaderia), format="%.2f"
-)
+    st.write("")
+    st.subheader("Pesos")
+    m1, mMid, m2 = st.columns([1.1, 1.1, 1.1])
+    with m1:
+        st.metric("Peso volumétrico (kg) 🔒", f"{total_peso_vol:,.2f}")
+    with mMid:
+        # INPUT NUMÉRICO CUSTOM (sin Enter/rojo/placeholder raro)
+        st.session_state.peso_bruto_raw = st.text_input(
+            "Peso bruto (kg)", value=st.session_state.peso_bruto_raw, help="Usá punto para decimales. Ej: 1.25"
+        )
+        try:
+            pb = float(st.session_state.peso_bruto_raw.replace(",", "."))
+            st.session_state.peso_bruto = max(0.0, pb)
+        except Exception:
+            pb = st.session_state.peso_bruto
+    with m2:
+        peso_aplicable = max(total_peso_vol, float(st.session_state.peso_bruto))
+        st.metric("Peso aplicable (kg) 🔒", f"{peso_aplicable:,.2f}")
 
-# Enviar
-st.write("")
-btn = st.button("📨 Solicitar cotización", use_container_width=False)
+    st.subheader("Valor de la mercadería")
+    st.session_state.valor_mercaderia_raw = st.text_input(
+        "Valor de la mercadería (USD)", value=st.session_state.valor_mercaderia_raw
+    )
+    try:
+        vm = float(st.session_state.valor_mercaderia_raw.replace(",", "."))
+        st.session_state.valor_mercaderia = max(0.0, vm)
+    except Exception:
+        vm = st.session_state.valor_mercaderia
 
-if btn:
+    st.write("")
+    submit = st.form_submit_button("📨 Solicitar cotización")
+
+# ----------- Submit -----------
+if submit:
     errores = []
     if not st.session_state.nombre.strip(): errores.append("• Nombre es obligatorio.")
     if not st.session_state.email.strip() or "@" not in st.session_state.email: errores.append("• Email válido es obligatorio.")
@@ -365,12 +322,7 @@ if btn:
             "valor_mercaderia_usd": float(st.session_state.valor_mercaderia)
         }
         ok, _ = post_to_webhook(payload)
-        if ok:
-            st.session_state.last_submit_ok = True
-            st.session_state.show_dialog = True
-        else:
-            # igual mostramos el modal (la cotización queda cargada localmente)
-            st.session_state.show_dialog = True
+        st.session_state.show_dialog = True  # mostramos popup igual
 
 # ---------- Popup post-submit ----------
 if st.session_state.get("show_dialog", False):
@@ -392,7 +344,7 @@ if st.session_state.get("show_dialog", False):
                 if st.button("Cerrar", use_container_width=True):
                     st.session_state.show_dialog = False; _rerun()
     else:
-        # Overlay + JS SIN f-string (concatenación, sin conflicto con { })
+        # Overlay + JS SIN f-strings (evita SyntaxError por llaves)
         html = (
             '<div class="gt-overlay">'
               '<div class="gt-modal">'
@@ -417,4 +369,4 @@ if st.session_state.get("show_dialog", False):
             '})();'
             '</script>'
         )
-        components.html(html, height=10, scrolling=False)
+        components.html(html, height=1, scrolling=False)

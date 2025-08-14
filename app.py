@@ -118,7 +118,8 @@ div.stButton > button:hover{ background:#f6f9ff !important; }
 FACTOR_VOL = 5000
 
 def init_state():
-    st.session_state.setdefault("rows", [{"cant":0, "ancho":0, "alto":0, "largo":0}])
+    st.session_state.setdefault("rows_uid_counter", 1)
+    st.session_state.setdefault("rows", [{"id": 1, "cant":0, "ancho":0, "alto":0, "largo":0}])
     st.session_state.setdefault("nombre","")
     st.session_state.setdefault("email","")
     st.session_state.setdefault("telefono","")
@@ -132,6 +133,10 @@ def init_state():
     st.session_state.setdefault("show_dialog", False)
     st.session_state.setdefault("form_errors", [])
 init_state()
+
+def new_row():
+    st.session_state.rows_uid_counter += 1
+    return {"id": st.session_state.rows_uid_counter, "cant":0, "ancho":0, "alto":0, "largo":0}
 
 # -------------------- QS helpers (manejo ?gt=...) --------------------
 def get_qs():
@@ -148,8 +153,9 @@ def rerun():
 
 _qs = get_qs()
 if _qs.get("gt","") == "reset":
+    st.session_state.rows_uid_counter = 1
+    st.session_state.rows = [{"id": 1, "cant":0, "ancho":0, "alto":0, "largo":0}]
     st.session_state.update({
-        "rows":[{"cant":0, "ancho":0, "alto":0, "largo":0}],
         "nombre":"", "email":"", "telefono":"", "es_cliente":"No",
         "descripcion":"", "link":"",
         "peso_bruto_raw":"0.00", "peso_bruto":0.0,
@@ -228,31 +234,37 @@ st.write("")
 st.subheader("Bultos")
 st.caption("Cargá por bulto: **cantidad** y **dimensiones en cm**. Calculamos el **peso volumétrico**.")
 
-# Filas de bultos (labels sobre cada input)
-for i, r in enumerate(st.session_state.rows):
+# Filas de bultos (labels sobre cada input; keys estables por fila)
+for idx, r in enumerate(st.session_state.rows):
+    rid = r["id"]
     cols = st.columns([0.9, 1, 1, 1])
     with cols[0]:
-        st.session_state.rows[i]["cant"] = st.number_input("Cantidad", min_value=0, step=1,
-                                                           value=int(r["cant"]), key=f"cant_{i}")
+        st.session_state.rows[idx]["cant"] = st.number_input(
+            "Cantidad", min_value=0, step=1, value=int(r["cant"]), key=f"cant_{rid}"
+        )
     with cols[1]:
-        st.session_state.rows[i]["ancho"] = st.number_input("Ancho (cm)", min_value=0.0, step=1.0,
-                                                            value=float(r["ancho"]), key=f"an_{i}")
+        st.session_state.rows[idx]["ancho"] = st.number_input(
+            "Ancho (cm)", min_value=0.0, step=1.0, value=float(r["ancho"]), key=f"an_{rid}"
+        )
     with cols[2]:
-        st.session_state.rows[i]["alto"] = st.number_input("Alto (cm)", min_value=0.0, step=1.0,
-                                                           value=float(r["alto"]), key=f"al_{i}")
+        st.session_state.rows[idx]["alto"] = st.number_input(
+            "Alto (cm)", min_value=0.0, step=1.0, value=float(r["alto"]), key=f"al_{rid}"
+        )
     with cols[3]:
-        st.session_state.rows[i]["largo"] = st.number_input("Largo (cm)", min_value=0.0, step=1.0,
-                                                            value=float(r["largo"]), key=f"lar_{i}")
+        st.session_state.rows[idx]["largo"] = st.number_input(
+            "Largo (cm)", min_value=0.0, step=1.0, value=float(r["largo"]), key=f"lar_{rid}"
+        )
 
 # Acciones (desktop en fila; mobile apiladas). Fondo blanco por CSS global.
 st.markdown('<div class="gt-bultos-actions">', unsafe_allow_html=True)
 cA, cB, cC = st.columns(3)
 with cA:
     if st.button("➕ Agregar bulto", use_container_width=True):
-        st.session_state.rows.append({"cant": 0, "ancho": 0, "alto": 0, "largo": 0})
+        st.session_state.rows.append(new_row())
 with cB:
     if st.button("🧹 Vaciar tabla", use_container_width=True):
-        st.session_state.rows = [{"cant": 0, "ancho": 0, "alto": 0, "largo": 0}]
+        st.session_state.rows_uid_counter = 1
+        st.session_state.rows = [{"id": 1, "cant":0, "ancho":0, "alto":0, "largo":0}]
 with cC:
     disable_del = len(st.session_state.rows) <= 1
     if st.button("🗑️ Eliminar último", use_container_width=True, disabled=disable_del):
@@ -312,7 +324,7 @@ if submit_clicked:
                 "descripcion": st.session_state.descripcion.strip(),
                 "link": st.session_state.link.strip()
             },
-            "bultos": st.session_state.rows,
+            "bultos": [{k: v for k, v in r.items() if k != "id"} for r in st.session_state.rows],
             "pesos": {
                 "volumetrico_kg": total_peso_vol,
                 "bruto_kg": st.session_state.peso_bruto,

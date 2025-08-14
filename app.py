@@ -11,7 +11,7 @@ st.set_page_config(
     page_title="Cotizador GlobalTrip",
     page_icon="📦",           # favicon cajita
     layout="wide",
-    initial_sidebar_state="collapsed",  # oculta la sidebar
+    initial_sidebar_state="collapsed",
 )
 
 # -------------------- Estilos (claro forzado + #000033) --------------------
@@ -22,6 +22,15 @@ st.markdown("""
 html, body, .stApp, [data-testid="stAppViewContainer"],
 section.main, [data-testid="stHeader"], [data-testid="stSidebar"]{
   background:#FFFFFF !important; color:#000033 !important;
+}
+
+/* Quitar padding superior: arrancar contenido bien arriba */
+[data-testid="block-container"]{
+  padding-top: .35rem !important;
+  padding-bottom: 2rem !important;
+}
+@media (max-width: 640px){
+  [data-testid="block-container"]{ padding-top: .2rem !important; }
 }
 
 /* Ocultar chrome de Streamlit Cloud (Share, ⋮, footer, etc.) */
@@ -171,10 +180,10 @@ if _qs.get("gt","") == "reset":
         "valor_mercaderia_raw":"0.00", "valor_mercaderia":0.0,
         "show_dialog": False, "form_errors":[]
     })
-    set_qs()  # sin rerun
+    set_qs()
 elif _qs.get("gt","") == "close":
     st.session_state.show_dialog = False
-    set_qs()  # sin rerun
+    set_qs()
 
 # -------------------- Helpers --------------------
 def to_float(s, default=0.0):
@@ -316,7 +325,7 @@ st.session_state.valor_mercaderia_raw = st.text_input(
 )
 st.session_state.valor_mercaderia = to_float(st.session_state.valor_mercaderia_raw, 0.0)
 
-# Submit (blanco, borde suave)
+# Submit
 st.write("")
 st.markdown('<div id="gt-submit-btn">', unsafe_allow_html=True)
 submit_clicked = st.button("📨 Solicitar cotización", use_container_width=True, key="gt_submit_btn")

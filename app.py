@@ -77,22 +77,6 @@ input:-webkit-autofill{
 }
 #gt-submit-btn button:hover{ background:#eef3ff !important; }
 
-<style>
-/* Botones estándar (Agregar, Vaciar, Eliminar, etc.) en blanco */
-div.stButton > button{
-  background:#fff !important;
-  color:#000033 !important;
-  border:1.5px solid #dfe7ef !important;
-  border-radius:16px !important;
-  box-shadow:none !important;
-  padding:10px 14px !important;
-  width:100% !important;   /* llenan el ancho de su columna */
-}
-div.stButton > button:hover{
-  background:#f7f9ff !important;
-}
-</style>
-
 /* Popup (sin iframe/JS) */
 .gt-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:99999;
   display:flex; align-items:center; justify-content:center; }
@@ -232,12 +216,11 @@ st.session_state.link = st.text_input("Link del producto o ficha técnica (Aliba
                                       value=st.session_state.link, placeholder="https://...", key="link_input")
 
 st.write("")
-
 # --------- BULTOS (labels sobre cada input, responsive) ---------
-
 st.subheader("Bultos")
 st.caption("Cargá por bulto: **cantidad** y **dimensiones en cm**. Calculamos el **peso volumétrico**.")
 
+# Filas de bultos (cada campo con su label)
 for i, r in enumerate(st.session_state.rows):
     cols = st.columns([0.9, 1, 1, 1, 0.8])
 
@@ -258,12 +241,17 @@ for i, r in enumerate(st.session_state.rows):
             "Largo (cm)", min_value=0.0, step=1.0, value=float(r["largo"]), key=f"lar_{i}"
         )
     with cols[4]:
-        # pequeño spacer para alinear con los inputs
-        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-        if st.button("🗑️ Eliminar", key=f"del_{i}", use_container_width=True):
+        if st.button("🗑️ Eliminar", key=f"del_{i}"):
             st.session_state.rows.pop(i)
             st.stop()
 
+cc1, cc2 = st.columns([1, 1])
+with cc1:
+    if st.button("➕ Agregar bulto"):
+        st.session_state.rows.append({"cant": 0, "ancho": 0, "alto": 0, "largo": 0})
+with cc2:
+    if st.button("🧹 Vaciar tabla"):
+        st.session_state.rows = [{"cant": 0, "ancho": 0, "alto": 0, "largo": 0}]
 
 # Pesos
 st.write("")
@@ -345,3 +333,4 @@ if st.session_state.get("show_dialog", False):
   </div>
 </div>
 """, unsafe_allow_html=True)
+

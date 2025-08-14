@@ -141,14 +141,10 @@ def get_qs():
 def set_qs(**kwargs):
     try:
         st.query_params.clear()
-        for k,v in kwargs.items(): st.query_params[k] = v
-    except: 
+        for k,v in kwargs.items():
+            st.query_params[k] = v
+    except:
         pass
-
-def safe_rerun():
-    # Usar sólo fuera de callbacks (p.ej., al manejar query params)
-    try: st.rerun()
-    except: st.experimental_rerun()
 
 _qs = get_qs()
 if _qs.get("gt","") == "reset":
@@ -160,14 +156,17 @@ if _qs.get("gt","") == "reset":
         "valor_mercaderia_raw":"0.00", "valor_mercaderia":0.0,
         "show_dialog": False, "form_errors":[]
     })
-    set_qs(); safe_rerun()
+    set_qs()  # sin rerun
 elif _qs.get("gt","") == "close":
-    st.session_state.show_dialog = False; set_qs(); safe_rerun()
+    st.session_state.show_dialog = False
+    set_qs()  # sin rerun
 
 # -------------------- Helpers --------------------
 def to_float(s, default=0.0):
-    try: return float(str(s).replace(",",".")) if s not in (None,"") else default
-    except: return default
+    try:
+        return float(str(s).replace(",",".")) if s not in (None,"") else default
+    except:
+        return default
 
 def compute_total_vol(rows):
     total = 0.0
@@ -201,7 +200,7 @@ def validate():
     if not hay_medidas: errs.append("• Ingresá al menos un bulto con **cantidad** y **medidas**.")
     return errs
 
-# -------------------- Callbacks (sin rerun adentro) --------------------
+# -------------------- Callbacks --------------------
 def add_row():
     st.session_state.rows.append({"cant": 0, "ancho": 0, "alto": 0, "largo": 0})
 
@@ -261,7 +260,7 @@ for i, r in enumerate(st.session_state.rows):
         st.session_state.rows[i]["largo"] = st.number_input("Largo (cm)", min_value=0.0, step=1.0,
                                                             value=float(r["largo"]), key=f"lar_{i}")
 
-# Acciones (desktop en fila; mobile apiladas). Fondos blancos por CSS global.
+# Acciones (desktop en fila; mobile apiladas)
 st.markdown('<div class="gt-bultos-actions">', unsafe_allow_html=True)
 cA, cB, cC = st.columns(3)
 with cA:

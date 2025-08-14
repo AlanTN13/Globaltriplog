@@ -26,7 +26,7 @@ section.main, [data-testid="stHeader"], [data-testid="stSidebar"]{
 
 /* Quitar padding superior: arrancar contenido bien arriba */
 [data-testid="block-container"]{
-  padding-top: .35rem !important;
+  padding-top: .15rem !important;
   padding-bottom: 2rem !important;
 }
 @media (max-width: 640px){

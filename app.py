@@ -7,8 +7,10 @@ import numpy as np
 import streamlit as st
 
 # -------------------- Config --------------------
-st.set_page_config(page_title="Cotizador GlobalTrip", page_icon="📦", layout="wide")
-
+st.set_page_config(
+    page_title="Cotizador GlobalTrip",
+    page_icon="assets/logo_globaltrip.png",  # usa el logo como favicon
+    layout="wide"
 # -------------------- Estilos (claro forzado + #000033) --------------------
 st.markdown("""
 <style>

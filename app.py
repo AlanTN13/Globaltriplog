@@ -1,4 +1,5 @@
 # app.py
+
 from __future__ import annotations
 import os, json, requests
 from datetime import datetime
@@ -9,8 +10,10 @@ import streamlit as st
 # -------------------- Config --------------------
 st.set_page_config(
     page_title="Cotizador GlobalTrip",
-    page_icon="assets/logo_globaltrip.png",  # usa el logo como favicon
-    layout="wide"
+    page_icon="assets/logo_globaltrip.png",  # ruta al logo
+    layout="wide",
+)
+
 # -------------------- Estilos (claro forzado + #000033) --------------------
 st.markdown("""
 <style>

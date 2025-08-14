@@ -312,7 +312,7 @@ st.subheader("Pesos")
 m1, m2 = st.columns([1.2, 1.0])
 with m1:
     st.session_state.peso_bruto_raw = st.text_input(
-        "Peso bruto (kg)", value=st.session_state.peso_bruto_raw,
+        "Peso bruto total (kg)", value=st.session_state.peso_bruto_raw,
         help="Usá punto o coma para decimales (ej: 1.25)"
     )
     st.session_state.peso_bruto = to_float(st.session_state.peso_bruto_raw, 0.0)
@@ -331,7 +331,7 @@ with m2:
 # Valor mercadería
 st.subheader("Valor de la mercadería")
 st.session_state.valor_mercaderia_raw = st.text_input(
-    "Valor de la mercadería (USD)", value=st.session_state.valor_mercaderia_raw
+    "Valor de la mercadería total (USD)", value=st.session_state.valor_mercaderia_raw
 )
 st.session_state.valor_mercaderia = to_float(st.session_state.valor_mercaderia_raw, 0.0)
 

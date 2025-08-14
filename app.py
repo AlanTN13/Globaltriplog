@@ -77,6 +77,22 @@ input:-webkit-autofill{
 }
 #gt-submit-btn button:hover{ background:#eef3ff !important; }
 
+<style>
+/* Botones estándar (Agregar, Vaciar, Eliminar, etc.) en blanco */
+div.stButton > button{
+  background:#fff !important;
+  color:#000033 !important;
+  border:1.5px solid #dfe7ef !important;
+  border-radius:16px !important;
+  box-shadow:none !important;
+  padding:10px 14px !important;
+  width:100% !important;   /* llenan el ancho de su columna */
+}
+div.stButton > button:hover{
+  background:#f7f9ff !important;
+}
+</style>
+
 /* Popup (sin iframe/JS) */
 .gt-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:99999;
   display:flex; align-items:center; justify-content:center; }
@@ -240,17 +256,18 @@ for i, r in enumerate(st.session_state.rows):
         st.session_state.rows[i]["largo"] = st.number_input(
             "Largo (cm)", min_value=0.0, step=1.0, value=float(r["largo"]), key=f"lar_{i}"
         )
-    with cols[4]:
-        if st.button("🗑️ Eliminar", key=f"del_{i}"):
-            st.session_state.rows.pop(i)
-            st.stop()
+ with cols[4]:
+    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)  # alinea con los inputs
+    if st.button("🗑️ Eliminar", key=f"del_{i}", use_container_width=True):
+        st.session_state.rows.pop(i)
+        st.stop()
 
 cc1, cc2 = st.columns([1, 1])
 with cc1:
-    if st.button("➕ Agregar bulto"):
+    if st.button("➕ Agregar bulto", use_container_width=True):
         st.session_state.rows.append({"cant": 0, "ancho": 0, "alto": 0, "largo": 0})
 with cc2:
-    if st.button("🧹 Vaciar tabla"):
+    if st.button("🧹 Vaciar tabla", use_container_width=True):
         st.session_state.rows = [{"cant": 0, "ancho": 0, "alto": 0, "largo": 0}]
 
 # Pesos

@@ -232,11 +232,12 @@ st.session_state.link = st.text_input("Link del producto o ficha técnica (Aliba
                                       value=st.session_state.link, placeholder="https://...", key="link_input")
 
 st.write("")
+
 # --------- BULTOS (labels sobre cada input, responsive) ---------
+
 st.subheader("Bultos")
 st.caption("Cargá por bulto: **cantidad** y **dimensiones en cm**. Calculamos el **peso volumétrico**.")
 
-# Filas de bultos (cada campo con su label)
 for i, r in enumerate(st.session_state.rows):
     cols = st.columns([0.9, 1, 1, 1, 0.8])
 
@@ -256,19 +257,13 @@ for i, r in enumerate(st.session_state.rows):
         st.session_state.rows[i]["largo"] = st.number_input(
             "Largo (cm)", min_value=0.0, step=1.0, value=float(r["largo"]), key=f"lar_{i}"
         )
- with cols[4]:
-    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)  # alinea con los inputs
-    if st.button("🗑️ Eliminar", key=f"del_{i}", use_container_width=True):
-        st.session_state.rows.pop(i)
-        st.stop()
+    with cols[4]:
+        # pequeño spacer para alinear con los inputs
+        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+        if st.button("🗑️ Eliminar", key=f"del_{i}", use_container_width=True):
+            st.session_state.rows.pop(i)
+            st.stop()
 
-cc1, cc2 = st.columns([1, 1])
-with cc1:
-    if st.button("➕ Agregar bulto", use_container_width=True):
-        st.session_state.rows.append({"cant": 0, "ancho": 0, "alto": 0, "largo": 0})
-with cc2:
-    if st.button("🧹 Vaciar tabla", use_container_width=True):
-        st.session_state.rows = [{"cant": 0, "ancho": 0, "alto": 0, "largo": 0}]
 
 # Pesos
 st.write("")

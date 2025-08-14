@@ -11,24 +11,25 @@ import streamlit.components.v1 as components
 # -------------------- Config --------------------
 st.set_page_config(page_title="Cotizador GlobalTrip", page_icon="📦", layout="wide")
 
-# -------------------- Estilos (fondo claro + texto #000033, SIEMPRE) --------------------
+# -------------------- Estilos: fondo claro + texto #000033 + botón coherente --------------------
 st.markdown("""
-<style id="force-light">
+<style>
 :root { color-scheme: light !important; }
+
+/* Fondo SIEMPRE blanco y texto #000033 */
 html, body, .stApp, [data-testid="stAppViewContainer"],
 section.main, [data-testid="stHeader"], [data-testid="stSidebar"]{
   background:#FFFFFF !important; color:#000033 !important;
 }
 
-/* TODO el texto en #000033 */
+/* Todo el texto */
 body, .stApp, div, p, span, label, h1,h2,h3,h4,h5,h6, a, small, strong, em, th, td,
 div[data-testid="stMarkdownContainer"] * { color:#000033 !important; }
-a { text-decoration:none; }
 
-/* Tarjeta hero */
+/* Card hero */
 .soft-card{
-  background:#fff; border:1.5px solid #dfe7ef;
-  border-radius:16px; padding:18px 20px; box-shadow:0 8px 18px rgba(17,24,39,.07);
+  background:#fff; border:1.5px solid #dfe7ef; border-radius:16px;
+  padding:18px 20px; box-shadow:0 8px 18px rgba(17,24,39,.07);
 }
 
 /* Inputs */
@@ -44,7 +45,7 @@ div[data-testid="stTextArea"] textarea:focus{
 div[data-testid="stTextInput"] input::placeholder,
 div[data-testid="stTextArea"] textarea::placeholder{ color:#000033 !important; opacity:.55 !important; }
 
-/* Radio chips */
+/* Radio */
 div[data-testid="stRadio"] label{
   background:#fff; border:1.5px solid #dfe7ef; border-radius:14px;
   padding:8px 12px; margin-right:8px; color:#000033 !important;
@@ -52,7 +53,8 @@ div[data-testid="stRadio"] label{
 
 /* Métricas */
 div[data-testid="stMetric"]{
-  background:#fff; border:1.5px solid #dfe7ef; border-radius:16px; padding:18px 20px; box-shadow:0 8px 18px rgba(17,24,39,.07);
+  background:#fff; border:1.5px solid #dfe7ef; border-radius:16px; padding:18px 20px;
+  box-shadow:0 8px 18px rgba(17,24,39,.07);
 }
 div[data-testid="stMetricLabel"], div[data-testid="stMetricValue"]{ color:#000033 !important; }
 
@@ -60,7 +62,7 @@ div[data-testid="stMetricLabel"], div[data-testid="stMetricValue"]{ color:#00003
 [data-testid="stDataFrame"]{
   background:#fff; border:1.5px solid #dfe7ef; border-radius:16px; box-shadow:0 8px 18px rgba(17,24,39,.07); overflow:hidden;
 }
-[data-testid="stDataFrame"] div[role="grid"]{ background:#fff; }
+[data-testid="stDataFrame"] div[role="grid"]{ background:#fff !important; }
 [data-testid="stDataFrame"] div[role="columnheader"]{
   background:#eef3ff !important; color:#000033 !important; border-bottom:1px solid #dfe7ef !important;
 }
@@ -75,20 +77,24 @@ div[data-testid="stMetricLabel"], div[data-testid="stMetricValue"]{ color:#00003
   box-shadow:0 18px 40px rgba(17,24,39,.25) !important;
 }
 
-/* Botón de submit (wrapper .gt-submit) */
-.gt-submit div.stButton > button, .gt-submit button[kind="primary"]{
-  width:100%; background:#FFFFFF !important; color:#000033 !important;
-  border:2px solid rgba(0,0,51,.18) !important; border-radius:16px !important;
-  padding:14px 18px !important; box-shadow:0 6px 14px rgba(0,0,0,.08) !important;
+/* BOTÓN (coherente con inputs) */
+div.stButton > button{
+  width:100%;
+  background:#FFFFFF !important;
+  color:#000033 !important;
+  border:1.5px solid #dfe7ef !important;
+  border-radius:16px !important;
+  padding:14px 18px !important;
+  box-shadow:0 6px 14px rgba(17,24,39,.08) !important;
   transition:transform .04s ease, box-shadow .2s ease, border-color .2s ease;
 }
-.gt-submit div.stButton > button:hover{ border-color:rgba(0,0,51,.45) !important; box-shadow:0 8px 18px rgba(0,0,0,.12) !important; }
-.gt-submit div.stButton > button:active{ transform: translateY(1px); }
-.gt-submit div.stButton > button:disabled{
-  background:#f5f7fb !important; color:#000033 !important; opacity:.6 !important; cursor:not-allowed !important; box-shadow:none !important;
+div.stButton > button:hover{
+  border-color:#c7d4e2 !important;
+  box-shadow:0 10px 22px rgba(17,24,39,.12) !important;
 }
+div.stButton > button:active{ transform: translateY(1px); }
 
-/* Fallback overlay (si no hay st.modal) */
+/* Fallback overlay */
 .gt-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999; display:flex; align-items:center; justify-content:center; }
 .gt-modal{ max-width:640px; width:92%; background:#fff; color:#000033; border:1.5px solid #dfe7ef; border-radius:18px; padding:22px; box-shadow:0 18px 40px rgba(17,24,39,.25); }
 .gt-actions{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px; }
@@ -97,7 +103,7 @@ div[data-testid="stMetricLabel"], div[data-testid="stMetricValue"]{ color:#00003
 """, unsafe_allow_html=True)
 
 # -------------------- Constantes --------------------
-FACTOR_VOL = 5000   # cm^3 -> kg
+FACTOR_VOL = 5000
 DEFAULT_ROWS = 10
 
 # -------------------- Estado --------------------
@@ -150,7 +156,7 @@ def compute_vol(df: pd.DataFrame):
 def post_to_webhook(payload: dict):
     url = st.secrets.get("N8N_WEBHOOK_URL", os.getenv("N8N_WEBHOOK_URL",""))
     token = st.secrets.get("N8N_TOKEN", os.getenv("N8N_TOKEN",""))
-    if not url:  # best-effort, no corta el flujo
+    if not url:
         return True, "Sin webhook configurado."
     headers = {"Content-Type":"application/json"}
     if token: headers["Authorization"] = f"Bearer {token}"
@@ -163,7 +169,6 @@ def post_to_webhook(payload: dict):
 init_state()
 
 # -------------------- UI --------------------
-# Hero
 st.markdown("""
 <div class="soft-card">
   <h2 style="margin:0;">📦 Cotización de Envío por Courier</h2>
@@ -172,7 +177,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 st.write("")
 
-# Formulario
 with st.form("cotizador", clear_on_submit=False):
     st.subheader("Datos de contacto y del producto")
     c1,c2,c3,c4 = st.columns([1.1,1.1,1.0,0.9])
@@ -230,10 +234,8 @@ with st.form("cotizador", clear_on_submit=False):
         pass
 
     st.write("")
-    # Botón estilizado (clase wrapper .gt-submit)
-    st.markdown('<div class="gt-submit">', unsafe_allow_html=True)
-    submitted = st.form_submit_button("📨 Solicitar cotización", type="primary", use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Botón (sin 'type="primary"' para evitar rojo del tema)
+    submitted = st.form_submit_button("📨 Solicitar cotización", use_container_width=True)
 
 # -------------------- Submit --------------------
 if submitted:
@@ -293,7 +295,6 @@ if st.session_state.get("show_modal", False):
                 if st.button("Cerrar", use_container_width=True):
                     st.session_state.show_modal = False; st.rerun()
     else:
-        # Fallback con overlay (sin f-strings)
         html = (
             '<div class="gt-overlay">'
               '<div class="gt-modal">'

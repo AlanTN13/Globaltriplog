@@ -24,14 +24,24 @@ section.main, [data-testid="stHeader"], [data-testid="stSidebar"]{
   background:#FFFFFF !important; color:#000033 !important;
 }
 
-/* Quitar padding superior: arrancar contenido bien arriba */
-[data-testid="block-container"]{
-  padding-top: .15rem !important;
-  padding-bottom: 2rem !important;
+/* Quitar todo el espacio superior: pegamos el contenido arriba */
+:root{ --header-height:0px !important; }                 /* anula altura reservada */
+[data-testid="stHeader"]{ display:none !important; }      /* oculta header */
+[data-testid="stToolbar"]{ display:none !important; }     /* oculta toolbar */
+[data-testid="stAppViewContainer"]{ padding-top:0 !important; }
+section.main{ padding-top:0 !important; }
+
+/* contenedor principal con el mínimo padding posible */
+section.main > div.block-container{ 
+  padding-top:.10rem !important; 
+  padding-bottom:2rem !important;
 }
-@media (max-width: 640px){
-  [data-testid="block-container"]{ padding-top: .2rem !important; }
-}
+
+/* por si el primer elemento trae margen propio, lo anulamos */
+section.main > div.block-container > div:first-child{ margin-top:0 !important; }
+
+/* opcional: si ves una barrita decorativa arriba (modo cloud) */
+div[data-testid="stDecoration"]{ display:none !important; }
 
 /* Ocultar chrome de Streamlit Cloud (Share, ⋮, footer, etc.) */
 #MainMenu,

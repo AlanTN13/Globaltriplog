@@ -11,108 +11,101 @@ import streamlit.components.v1 as components
 # -------------------- Config --------------------
 st.set_page_config(page_title="Cotizador GlobalTrip", page_icon="📦", layout="wide")
 
-# -------------------- Styles --------------------
+# -------------------- Styles (forzar claro + #000033) --------------------
 st.markdown("""
 <style>
+/* Fuerza modo claro aunque el usuario tenga Dark Theme */
+:root, [data-testid="stAppViewContainer"] { color-scheme: light !important; }
+
+/* Fondo blanco en contenedores base */
+html, body, .stApp,
+[data-testid="stAppViewContainer"],
+section.main, [data-testid="stHeader"],
+[data-testid="stSidebar"]{
+  background-color:#FFFFFF !important; color:#000033 !important;
+}
+
+/* Paleta */
 :root{
   --brand: #000033;
   --brand-soft: #eaf1ff;
-  --soft-bg: #f4f9fb;
   --soft-card: #ffffff;
   --soft-border: #dfe7ef;
-  --soft-text: #000033;
   --soft-focus: rgba(0, 0, 51, .2);
 }
-html, body, [data-testid="stAppViewContainer"] { background: var(--soft-bg) !important; }
-header, div[data-testid="stToolbar"]{ display:none !important; }
 
-/* TODO texto #000033 */
-body, [data-testid="stAppViewContainer"]{ color: var(--brand) !important; }
-div[data-testid="stMarkdownContainer"] * { color: var(--brand) !important; }
+/* Todo texto en #000033 */
+div, p, span, label, h1, h2, h3, h4, h5, h6, a, small, strong, em, th, td,
+div[data-testid="stMarkdownContainer"] * { color:#000033 !important; }
 
-/* Card */
+/* Hero card */
 .soft-card{
-  background: var(--soft-card);
-  border: 1.5px solid var(--soft-border);
-  border-radius: 16px;
-  padding: 18px 20px;
-  box-shadow: 0 8px 18px rgba(17,24,39,.07);
+  background:#fff; border:1.5px solid var(--soft-border);
+  border-radius:16px; padding:18px 20px; box-shadow:0 8px 18px rgba(17,24,39,.07);
 }
-
-/* Labels */
-div[data-testid="stMetricLabel"],
-div[data-testid="stCaptionContainer"],
-div[data-testid="stWidgetLabel"] *, div[data-baseweb="textarea"] label { color: var(--brand) !important; }
 
 /* Inputs */
 div[data-testid="stTextInput"] input,
 div[data-testid="stNumberInput"] input,
 div[data-testid="stTextArea"] textarea{
-  background:#fff !important;
-  border:1.5px solid var(--soft-border) !important;
-  border-radius:16px !important;
-  color:var(--brand) !important;
-  padding:14px 16px !important;
+  background:#fff !important; border:1.5px solid var(--soft-border) !important;
+  border-radius:16px !important; color:#000033 !important; padding:14px 16px !important;
   box-shadow:0 6px 16px rgba(17,24,39,0.06) !important;
 }
 div[data-testid="stTextInput"] input:focus,
 div[data-testid="stNumberInput"] input:focus,
 div[data-testid="stTextArea"] textarea:focus{
-  outline:none !important;
-  border-color: var(--brand) !important;
+  outline:none !important; border-color:#000033 !important;
   box-shadow:0 0 0 3px var(--soft-focus) !important;
 }
 div[data-testid="stTextInput"] input::placeholder,
 div[data-testid="stNumberInput"] input::placeholder,
-div[data-testid="stTextArea"] textarea::placeholder{ color:#000033 !important; opacity:1 !important; }
+div[data-testid="stTextArea"] textarea::placeholder{ color:#000033 !important; opacity:.6 !important; }
 
 /* Radio chips */
 div[data-testid="stRadio"] label{
   background:#fff; border:1.5px solid var(--soft-border);
   border-radius:14px; padding:8px 12px; margin-right:8px;
-  color:var(--brand) !important; box-shadow:0 4px 12px rgba(17,24,39,0.05);
+  color:#000033 !important; box-shadow:0 4px 12px rgba(17,24,39,0.05);
 }
 
 /* Métricas */
 div[data-testid="stMetric"]{
   background:#fff; border:1.5px solid var(--soft-border);
-  border-radius:16px; padding:18px 20px;
-  box-shadow:0 8px 18px rgba(17,24,39,.07);
+  border-radius:16px; padding:18px 20px; box-shadow:0 8px 18px rgba(17,24,39,.07);
 }
-div[data-testid="stMetricValue"]{ color: var(--brand) !important; }
+div[data-testid="stMetricValue"]{ color:#000033 !important; }
 
 /* Botón */
 div.stButton > button{
-  border:1.5px solid var(--soft-border) !important;
-  border-radius:16px !important;
-  background:#ffffff !important;
-  color:#000033 !important;
-  padding:14px 18px !important;
+  border:1.5px solid var(--soft-border) !important; border-radius:16px !important;
+  background:#ffffff !important; color:#000033 !important; padding:14px 18px !important;
   box-shadow:0 10px 22px rgba(17,24,39,.09) !important;
 }
 div.stButton > button:hover{ border-color:#c7d4e2 !important; box-shadow:0 12px 26px rgba(17,24,39,.12) !important; }
 
-/* Data editor */
+/* Data editor claro */
 [data-testid="stDataFrame"]{
   background:#fff !important; border:1.5px solid var(--soft-border) !important;
   border-radius:16px !important; box-shadow:0 8px 18px rgba(17,24,39,.07) !important; overflow:hidden;
 }
-[data-testid="stDataFrame"] div[role="columnheader"]{ background: var(--brand-soft) !important; color: var(--brand) !important; }
-[data-testid="stDataFrame"] div[role="cell"]{ background:#fff !important; color: var(--brand) !important; border-color: var(--soft-border) !important; }
+[data-testid="stDataFrame"] div[role="grid"]{ background:#fff !important; }
+[data-testid="stDataFrame"] div[role="columnheader"]{ background:var(--brand-soft) !important; color:#000033 !important; }
+[data-testid="stDataFrame"] div[role="cell"]{ background:#fff !important; color:#000033 !important; border-color:var(--soft-border) !important; }
 [data-testid="stDataFrame"] *::selection{ background: var(--soft-focus) !important; }
 [data-testid="stDataFrame"] .st-emotion-cache-1xarl3l { padding: 6px 10px !important; }
 
 /* Modal nativo */
 [data-testid="stModal"] > div { border:1.5px solid var(--soft-border); border-radius:18px; box-shadow:0 18px 40px rgba(17,24,39,.25); }
-[data-testid="stModal"] .stButton > button{ border:1.5px solid var(--soft-border) !important; border-radius:16px !important; background:#f0f7ff !important; color:var(--brand) !important; }
+[data-testid="stModal"] .stButton > button{ border:1.5px solid var(--soft-border) !important; border-radius:16px !important; background:#f0f7ff !important; color:#000033 !important; }
 
 /* Fallback overlay */
 .gt-overlay{ position:fixed; inset:0; background:rgba(2,6,23,.45); z-index:9999; display:flex; align-items:center; justify-content:center; }
-.gt-modal{ max-width:640px; width:92%; background:#fff; color:var(--brand); border:1.5px solid var(--soft-border); border-radius:18px; padding:22px; box-shadow:0 18px 40px rgba(17,24,39,.25); }
+.gt-modal{ max-width:640px; width:92%; background:#fff; color:#000033; border:1.5px solid var(--soft-border); border-radius:18px; padding:22px; box-shadow:0 18px 40px rgba(17,24,39,.25); }
 .gt-modal h3{ margin:0 0 8px 0; font-size:28px; }
 .gt-modal p{ margin:6px 0; }
 .gt-actions{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px; }
-.gt-btn{ display:inline-block; text-align:center; text-decoration:none; cursor:pointer; border:1.5px solid var(--soft-border); border-radius:16px; background:#f0f7ff; color:var(--brand); padding:12px 16px; }
+.gt-btn{ display:inline-block; text-align:center; text-decoration:none; cursor:pointer; border:1.5px solid var(--soft-border); border-radius:16px; background:#f0f7ff; color:#000033; padding:12px 16px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -257,7 +250,7 @@ with st.form("cot-form", clear_on_submit=False):
     with m1:
         st.metric("Peso volumétrico (kg) 🔒", f"{total_peso_vol:,.2f}")
     with mMid:
-        # INPUT NUMÉRICO CUSTOM (sin Enter/rojo/placeholder raro)
+        # INPUT NUMÉRICO CUSTOM (texto -> float). Sin "Enter para aplicar".
         st.session_state.peso_bruto_raw = st.text_input(
             "Peso bruto (kg)", value=st.session_state.peso_bruto_raw, help="Usá punto para decimales. Ej: 1.25"
         )
@@ -321,8 +314,8 @@ if submit:
             },
             "valor_mercaderia_usd": float(st.session_state.valor_mercaderia)
         }
-        ok, _ = post_to_webhook(payload)
-        st.session_state.show_dialog = True  # mostramos popup igual
+        post_to_webhook(payload)  # best-effort
+        st.session_state.show_dialog = True
 
 # ---------- Popup post-submit ----------
 if st.session_state.get("show_dialog", False):
@@ -344,7 +337,7 @@ if st.session_state.get("show_dialog", False):
                 if st.button("Cerrar", use_container_width=True):
                     st.session_state.show_dialog = False; _rerun()
     else:
-        # Overlay + JS SIN f-strings (evita SyntaxError por llaves)
+        # Overlay + JS SIN f-strings (evita conflicto de llaves)
         html = (
             '<div class="gt-overlay">'
               '<div class="gt-modal">'

@@ -69,25 +69,32 @@ input:-webkit-autofill{
   -webkit-text-fill-color:#000033 !important;
 }
 
-/* ===== BOTONES ===== */
-/* Estilo general de TODOS los st.button (blancos) */
-div.stButton > button{
-  background:#ffffff !important; color:#000033 !important;
-  border:1.5px solid #dfe7ef !important; border-radius:16px !important;
-  padding:10px 14px !important; min-height:48px !important;
-  box-shadow:0 6px 14px rgba(17,24,39,.08) !important;
-  width:100% !important;
-  display:flex; align-items:center; justify-content:center;
-}
-div.stButton > button:hover{ background:#f7faff !important; }
-
-/* Botón ENVIAR (mantiene su estilo propio) */
+/* Botón enviar */
 #gt-submit-btn button{
   width:100% !important; background:#f3f5fb !important; color:#000033 !important;
   border:2px solid #000033 !important; border-radius:16px !important; padding:14px 18px !important;
-  box-shadow:0 4px 10px rgba(0,16,64,.08) !important; min-height:auto !important;
+  box-shadow:0 4px 10px rgba(0,16,64,.08) !important;
 }
 #gt-submit-btn button:hover{ background:#eef3ff !important; }
+
+/* Pill para "Peso aplicable" (más discreto) */
+.gt-pill{
+  display:inline-flex; align-items:center; gap:10px;
+  padding:10px 14px; border:1.5px solid #dfe7ef; background:#fff;
+  border-radius:12px; box-shadow:0 6px 16px rgba(17,24,39,.06);
+}
+.gt-pill .lbl{ font-size:14px; opacity:.7; }
+.gt-pill .val{ font-weight:800; font-size:18px; }
+
+/* Botones blancos Alinear en una fila (Agregar/Vaciar) */
+.gt-actions-row{
+  display:flex; gap:16px; align-items:center; justify-content:space-between;
+}
+.gt-btn-white{
+  width:100%; text-align:center; padding:16px; border:1.5px solid #dfe7ef;
+  background:#fff; border-radius:16px; box-shadow:0 8px 18px rgba(17,24,39,.07);
+  text-decoration:none; color:#000033; display:block;
+}
 
 /* Popup (sin iframe/JS) */
 .gt-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:99999;
@@ -105,6 +112,7 @@ div.stButton > button:hover{ background:#f7faff !important; }
 @media (max-width: 640px){
   .soft-card{ padding:16px; }
   div[data-testid="stNumberInput"] input{ font-size:18px !important; }
+  .gt-actions-row{ flex-direction:column; }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -189,10 +197,8 @@ def validate():
     if not st.session_state.telefono.strip(): errs.append("• Teléfono es obligatorio.")
     if not st.session_state.descripcion.strip(): errs.append("• Descripción del producto es obligatoria.")
     if not st.session_state.link.strip(): errs.append("• Link del producto/ficha técnica es obligatorio.")
-    hay_medidas = any(
-        to_float(r["cant"])>0 and (to_float(r["ancho"])+to_float(r["alto"])+to_float(r["largo"]))>0
-        for r in st.session_state.rows
-    )
+    hay_medidas = any(to_float(r["cant"])>0 and (to_float(r["ancho"])+to_float(r["alto"])+to_float(r["largo"]))>0
+                      for r in st.session_state.rows)
     if not hay_medidas: errs.append("• Ingresá al menos un bulto con **cantidad** y **medidas**.")
     return errs
 
@@ -209,13 +215,13 @@ st.subheader("Datos de contacto y del producto")
 c1,c2,c3,c4 = st.columns([1.1,1.1,1.0,0.9])
 with c1:
     st.session_state.nombre = st.text_input("Nombre completo*", value=st.session_state.nombre,
-                                            placeholder="Ej: Juan Pérez", key="nombre_input")
+                                 placeholder="Ej: Juan Pérez", key="nombre_input")
 with c2:
     st.session_state.email = st.text_input("Correo electrónico*", value=st.session_state.email,
-                                           placeholder="ejemplo@email.com", key="email_input")
+                                placeholder="ejemplo@email.com", key="email_input")
 with c3:
     st.session_state.telefono = st.text_input("Teléfono*", value=st.session_state.telefono,
-                                              placeholder="Ej: 11 5555 5555", key="tel_input")
+                              placeholder="Ej: 11 5555 5555", key="tel_input")
 with c4:
     st.session_state.es_cliente = st.radio("¿Cliente/alumno de Global Trip?", ["No","Sí"],
                                            index=0 if st.session_state.es_cliente=="No" else 1, horizontal=True)
@@ -230,9 +236,9 @@ st.write("")
 st.subheader("Bultos")
 st.caption("Cargá por bulto: **cantidad** y **dimensiones en cm**. Calculamos el **peso volumétrico**.")
 
-# Filas de bultos (solo 4 columnas de inputs)
+# Filas de bultos (cada campo con su label)
 for i, r in enumerate(st.session_state.rows):
-    cols = st.columns([0.9, 1, 1, 1])
+    cols = st.columns([0.9, 1, 1, 1, 0.8])
 
     with cols[0]:
         st.session_state.rows[i]["cant"] = st.number_input(
@@ -250,43 +256,59 @@ for i, r in enumerate(st.session_state.rows):
         st.session_state.rows[i]["largo"] = st.number_input(
             "Largo (cm)", min_value=0.0, step=1.0, value=float(r["largo"]), key=f"lar_{i}"
         )
+    with cols[4]:
+        if st.button("🗑️ Eliminar", key=f"del_{i}"):
+            st.session_state.rows.pop(i)
+            st.stop()
 
-# Acciones: los 3 en una FILA
-a1, a2, a3 = st.columns([1, 1, 1])
+# Acciones en una sola fila y con fondo blanco
+a1, a2 = st.columns([1,1])
 with a1:
-    if st.button("➕ Agregar bulto", key="add_row", use_container_width=True):
-        st.session_state.rows.append({"cant": 0, "ancho": 0, "alto": 0, "largo": 0})
+    st.markdown('<a class="gt-btn-white" href="?gt=add" target="_self">➕ Agregar bulto</a>', unsafe_allow_html=True)
 with a2:
-    if st.button("🧹 Vaciar tabla", key="clear_rows", use_container_width=True):
-        st.session_state.rows = [{"cant": 0, "ancho": 0, "alto": 0, "largo": 0}]
-with a3:
-    disable_del = len(st.session_state.rows) <= 1
-    if st.button("🗑️ Eliminar bulto", key="del_last", use_container_width=True, disabled=disable_del):
-        if not disable_del:
-            st.session_state.rows.pop()
+    st.markdown('<a class="gt-btn-white" href="?gt=clear" target="_self">🧹 Vaciar tabla</a>', unsafe_allow_html=True)
 
-# Pesos
+# Manejo rápido de esas acciones vía QS
+_qs2 = get_qs()
+if _qs2.get("gt") == "add":
+    st.session_state.rows.append({"cant": 0, "ancho": 0, "alto": 0, "largo": 0})
+    set_qs(); rerun()
+elif _qs2.get("gt") == "clear":
+    st.session_state.rows = [{"cant": 0, "ancho": 0, "alto": 0, "largo": 0}]
+    set_qs(); rerun()
+
+# --------- PESOS (unificado) ---------
 st.write("")
 st.subheader("Pesos")
-m1, mMid, m2 = st.columns([1.1, 1.1, 1.1])
-total_peso_vol = compute_total_vol(st.session_state.rows)
-with m1:
-    st.metric("Peso volumétrico (kg) 🔒", f"{total_peso_vol:,.2f}")
-with mMid:
-    st.session_state.peso_bruto_raw = st.text_input("Peso bruto (kg)", value=st.session_state.peso_bruto_raw,
-                                                    help="Usá punto o coma para decimales (ej: 1.25)", key="pb_input")
-    st.session_state.peso_bruto = to_float(st.session_state.peso_bruto_raw, 0.0)
-with m2:
-    peso_aplicable = max(total_peso_vol, st.session_state.peso_bruto)
-    st.metric("Peso aplicable (kg) 🔒", f"{peso_aplicable:,.2f}")
 
-# Valor mercadería
+total_peso_vol = compute_total_vol(st.session_state.rows)
+
+pc1, pc2 = st.columns([1.4, 1.0])
+with pc1:
+    # Igual que "Valor de la mercadería": text_input ancho, sin "Enter para aplicar"
+    st.session_state.peso_bruto_raw = st.text_input(
+        "Peso bruto (kg)", value=st.session_state.peso_bruto_raw,
+        help="Usá punto o coma para decimales (ej: 1.25)", key="pb_input"
+    )
+    st.session_state.peso_bruto = to_float(st.session_state.peso_bruto_raw, 0.0)
+
+with pc2:
+    peso_aplicable = max(total_peso_vol, st.session_state.peso_bruto)
+    st.markdown(
+        f'<div class="gt-pill"><span class="lbl">Peso aplicable (kg) 🔒</span>'
+        f'<span class="val">{peso_aplicable:,.2f}</span></div>',
+        unsafe_allow_html=True
+    )
+    st.caption(f"Se toma el mayor entre volumétrico ({total_peso_vol:,.2f}) y bruto ({st.session_state.peso_bruto:,.2f}).")
+
+# --------- VALOR MERCADERÍA ---------
 st.subheader("Valor de la mercadería")
-st.session_state.valor_mercaderia_raw = st.text_input("Valor de la mercadería (USD)",
-                                                      value=st.session_state.valor_mercaderia_raw, key="vm_input")
+st.session_state.valor_mercaderia_raw = st.text_input(
+    "Valor de la mercadería (USD)", value=st.session_state.valor_mercaderia_raw, key="vm_input"
+)
 st.session_state.valor_mercaderia = to_float(st.session_state.valor_mercaderia_raw, 0.0)
 
-# Submit
+# --------- SUBMIT ---------
 st.write("")
 st.markdown('<div id="gt-submit-btn">', unsafe_allow_html=True)
 submit_clicked = st.button("📨 Solicitar cotización", use_container_width=True, key="gt_submit_btn")
@@ -323,11 +345,9 @@ if submit_clicked:
 
 # Errores debajo del botón
 if st.session_state.form_errors:
-    st.markdown('<div id="gt-errors">', unsafe_allow_html=True)
     st.error("Revisá estos puntos:\n\n" + "\n".join(st.session_state.form_errors))
-    st.markdown('</div>', unsafe_allow_html=True)
 
-# -------------------- Popup SIN iframe/JS --------------------
+# --------- Popup SIN iframe/JS ---------
 if st.session_state.get("show_dialog", False):
     email = (st.session_state.email or "").strip()
     email_html = f"<a href='mailto:{email}'>{email}</a>" if email else "tu correo"

@@ -76,7 +76,7 @@ div.stButton > button{
   border:1.5px solid #dfe7ef !important; border-radius:16px !important;
   padding:10px 14px !important; min-height:48px !important;
   box-shadow:0 6px 14px rgba(17,24,39,.08) !important;
-  width:100% !important;        /* para alinear con inputs */
+  width:100% !important;
   display:flex; align-items:center; justify-content:center;
 }
 div.stButton > button:hover{ background:#f7faff !important; }
@@ -230,10 +230,9 @@ st.write("")
 st.subheader("Bultos")
 st.caption("Cargá por bulto: **cantidad** y **dimensiones en cm**. Calculamos el **peso volumétrico**.")
 
-# Filas de bultos (cada campo con su label)
+# Filas de bultos (solo 4 columnas de inputs)
 for i, r in enumerate(st.session_state.rows):
-    # Última columna con el botón de eliminar alineado y ancho completo
-    cols = st.columns([0.9, 1, 1, 1, 1])
+    cols = st.columns([0.9, 1, 1, 1])
 
     with cols[0]:
         st.session_state.rows[i]["cant"] = st.number_input(
@@ -251,19 +250,20 @@ for i, r in enumerate(st.session_state.rows):
         st.session_state.rows[i]["largo"] = st.number_input(
             "Largo (cm)", min_value=0.0, step=1.0, value=float(r["largo"]), key=f"lar_{i}"
         )
-    with cols[4]:
-        if st.button("🗑️ Eliminar", key=f"del_{i}", use_container_width=True):
-            st.session_state.rows.pop(i)
-            st.stop()
 
-# Acciones de tabla: alineadas, fondo blanco y ancho igual
-cc1, cc2 = st.columns([1, 1])
-with cc1:
-    if st.button("➕ Agregar bulto", use_container_width=True):
+# Acciones: los 3 en una FILA
+a1, a2, a3 = st.columns([1, 1, 1])
+with a1:
+    if st.button("➕ Agregar bulto", key="add_row", use_container_width=True):
         st.session_state.rows.append({"cant": 0, "ancho": 0, "alto": 0, "largo": 0})
-with cc2:
-    if st.button("🧹 Vaciar tabla", use_container_width=True):
+with a2:
+    if st.button("🧹 Vaciar tabla", key="clear_rows", use_container_width=True):
         st.session_state.rows = [{"cant": 0, "ancho": 0, "alto": 0, "largo": 0}]
+with a3:
+    disable_del = len(st.session_state.rows) <= 1
+    if st.button("🗑️ Eliminar bulto", key="del_last", use_container_width=True, disabled=disable_del):
+        if not disable_del:
+            st.session_state.rows.pop()
 
 # Pesos
 st.write("")
@@ -317,7 +317,6 @@ if submit_clicked:
             },
             "valor_mercaderia_usd": st.session_state.valor_mercaderia
         }
-        # Envío best-effort si hubiera webhook
         try: post_to_webhook(payload)
         except: pass
         st.session_state.show_dialog = True

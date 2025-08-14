@@ -151,18 +151,25 @@ st.write("")
 st.subheader("Datos de contacto y del producto")
 c1,c2,c3,c4 = st.columns([1.1,1.1,1.0,0.9])
 with c1:
-    st.session_state.nombre = st.text_input("Nombre completo*", st.session_state.nombre, placeholder="Ej: Juan Pérez", key="name", help="autocomplete")
+    nombre_input = st.text_input("Nombre completo*", value=st.session_state.nombre,
+                                 placeholder="Ej: Juan Pérez", key="nombre_input")
+    st.session_state.nombre = nombre_input
 with c2:
-    st.session_state.email = st.text_input("Correo electrónico*", st.session_state.email, placeholder="ejemplo@email.com", key="email", help="autocomplete")
+    email_input = st.text_input("Correo electrónico*", value=st.session_state.email,
+                                placeholder="ejemplo@email.com", key="email_input")
+    st.session_state.email = email_input
 with c3:
-    st.session_state.telefono = st.text_input("Teléfono*", st.session_state.telefono, placeholder="Ej: 11 5555 5555", key="tel", help="autocomplete")
+    tel_input = st.text_input("Teléfono*", value=st.session_state.telefono,
+                              placeholder="Ej: 11 5555 5555", key="tel_input")
+    st.session_state.telefono = tel_input
 with c4:
     st.session_state.es_cliente = st.radio("¿Cliente/alumno de Global Trip?", ["No","Sí"],
                                            index=0 if st.session_state.es_cliente=="No" else 1, horizontal=True)
-st.session_state.descripcion = st.text_area("Descripción del producto*", st.session_state.descripcion,
-                                            placeholder='Ej: "Máquina selladora de bolsas"')
+
+st.session_state.descripcion = st.text_area("Descripción del producto*", value=st.session_state.descripcion,
+                                            placeholder='Ej: "Máquina selladora de bolsas"', key="desc_input")
 st.session_state.link = st.text_input("Link del producto o ficha técnica (Alibaba, Amazon, etc.)*",
-                                      st.session_state.link, placeholder="https://...")
+                                      value=st.session_state.link, placeholder="https://...", key="link_input")
 
 st.write("")
 st.subheader("Bultos")
@@ -201,8 +208,8 @@ total_peso_vol = compute_total_vol(st.session_state.rows)
 with m1:
     st.metric("Peso volumétrico (kg) 🔒", f"{total_peso_vol:,.2f}")
 with mMid:
-    st.session_state.peso_bruto_raw = st.text_input("Peso bruto (kg)", st.session_state.peso_bruto_raw,
-                                                    help="Usá punto o coma para decimales (ej: 1.25)")
+    st.session_state.peso_bruto_raw = st.text_input("Peso bruto (kg)", value=st.session_state.peso_bruto_raw,
+                                                    help="Usá punto o coma para decimales (ej: 1.25)", key="pb_input")
     st.session_state.peso_bruto = to_float(st.session_state.peso_bruto_raw, 0.0)
 with m2:
     peso_aplicable = max(total_peso_vol, st.session_state.peso_bruto)
@@ -210,7 +217,8 @@ with m2:
 
 # Valor mercadería
 st.subheader("Valor de la mercadería")
-st.session_state.valor_mercaderia_raw = st.text_input("Valor de la mercadería (USD)", st.session_state.valor_mercaderia_raw)
+st.session_state.valor_mercaderia_raw = st.text_input("Valor de la mercadería (USD)",
+                                                      value=st.session_state.valor_mercaderia_raw, key="vm_input")
 st.session_state.valor_mercaderia = to_float(st.session_state.valor_mercaderia_raw, 0.0)
 
 # Submit
@@ -244,7 +252,7 @@ if submit_clicked:
             },
             "valor_mercaderia_usd": st.session_state.valor_mercaderia
         }
-        # Envío best-effort si existiera webhook
+        # Envío best-effort si hubiera webhook
         try: post_to_webhook(payload)
         except: pass
         st.session_state.show_dialog = True

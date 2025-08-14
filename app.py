@@ -1,201 +1,292 @@
+# app.py
+# Streamlit 1.30+ recommended
+
 import os
-import re
-import time
-import requests
+import json
+from datetime import datetime
+
+import numpy as np
 import pandas as pd
+import requests
 import streamlit as st
 
-# ========= Config mínima (no cambia colores/tema) =========
-st.set_page_config(page_title="Cotizador de Envío", page_icon="📦", layout="wide")
-
-DIVISOR_VOLUMETRICO = 5000  # 10x10x20/5000 * cant 10 = 4.00
-
-# =================== Helpers ===================
-def parse_num(txt: str) -> float:
-    """Convierte texto a float (acepta coma o punto). Vacío o inválido -> 0."""
-    s = (txt or "").strip().replace(",", ".")
-    if s == "" or not re.match(r"^[+-]?\d*\.?\d*$", s):
-        return 0.0
-    try:
-        return float(s)
-    except Exception:
-        return 0.0
-
-def calcular_volumetrico(df: pd.DataFrame) -> tuple[pd.DataFrame, float]:
-    safe = df.fillna(0)
-    fila = (safe["Ancho (cm)"] * safe["Alto (cm)"] * safe["Largo (cm)"]) / DIVISOR_VOLUMETRICO
-    fila = fila * safe["Cantidad de bultos"]
-    out = safe.copy()
-    out["Peso vol. (kg)"] = fila.round(2)
-    return out, float(fila.sum())
-
-def resetear_form():
-    st.session_state.df_bultos.loc[:, :] = 0
-    st.session_state.df_bultos["Peso vol. (kg)"] = 0.0
-    st.session_state.peso_vol_total = 0.0
-    st.session_state.peso_bruto_txt = ""
-    st.session_state.valor_mercaderia_txt = ""
-
-def get_webhook_url() -> str:
-    # 1) Streamlit Secrets, 2) variable de entorno
-    try:
-        return st.secrets.get("N8N_WEBHOOK_URL", "").strip()  # type: ignore
-    except Exception:
-        pass
-    return os.getenv("N8N_WEBHOOK_URL", "").strip()
-
-# =================== Estado ===================
-if "df_bultos" not in st.session_state:
-    st.session_state.df_bultos = pd.DataFrame({
-        "Cantidad de bultos": [0]*10,
-        "Ancho (cm)": [0]*10,
-        "Alto (cm)": [0]*10,
-        "Largo (cm)": [0]*10,
-        "Peso vol. (kg)": [0.0]*10,  # se completa al calcular
-    })
-if "peso_vol_total" not in st.session_state:
-    st.session_state.peso_vol_total = 0.0
-if "peso_bruto_txt" not in st.session_state:
-    st.session_state.peso_bruto_txt = ""   # texto -> se limpia al escribir
-if "valor_mercaderia_txt" not in st.session_state:
-    st.session_state.valor_mercaderia_txt = ""
-if "mostrar_modal" not in st.session_state:
-    st.session_state.mostrar_modal = False
-
-# =================== HERO (ligero, no cambia estilos) ===================
-st.title("📦 Cotización de Envío por Courier")
-st.caption("Completá tus datos y medidas. Te mandamos la cotización por email.")
-
-# =================== BULTOS ===================
-st.header("Bultos")
-st.caption(
-    'Tip: usá el botón “+” al final de la tabla para agregar más bultos. '
-    'Ingresá por bulto: cantidad y dimensiones en cm. El **peso volumétrico** se calcula con el botón.'
+# -------------------- Page & Theme --------------------
+st.set_page_config(
+    page_title="Cotización de Envío por Courier",
+    layout="wide",
+    initial_sidebar_state="collapsed",
 )
 
-# Editor (la columna calculada queda bloqueada)
-df_edit = st.data_editor(
-    st.session_state.df_bultos,
-    key="editor_bultos",
-    num_rows="dynamic",
+# -------------------- Styles (azul del botón) --------------------
+st.markdown(
+    """
+    <style>
+      :root{
+        --brand:#1F6FFF;          /* azul principal (igual al botón) */
+        --brand-soft:#E9F0FF;     /* versión suave para fondos */
+        --ink:#0E1B2B;            /* texto principal oscuro */
+      }
+
+      /* Ocultar menú de 3 puntos / fork / footer */
+      #MainMenu, footer, header [data-testid="baseButton-header"],
+      .stDeployButton, [data-testid="stToolbar"] {display:none !important;}
+
+      /* Títulos, subtítulos y labels en azul */
+      h1, h2, h3, h4, h5, h6,
+      [data-testid="stWidgetLabel"] p,
+      [data-testid="stRadio"] label,
+      [data-testid="stMarkdownContainer"] p.section-title {
+        color: var(--brand) !important;
+      }
+
+      /* Caja hero */
+      .hero{
+        background: var(--brand-soft);
+        border: 1px solid #d9e6ff;
+        padding: 20px 24px;
+        border-radius: 14px;
+        margin-bottom: 8px;
+      }
+
+      /* Inputs */
+      div[data-testid="stTextInput"] input,
+      div[data-testid="stNumberInput"] input,
+      div[data-testid="stTextArea"] textarea{
+        background:#232833; color:#fff;
+        border:1px solid #2d3647;
+        border-radius:12px;
+      }
+      div[data-testid="stTextInput"] input::placeholder,
+      div[data-testid="stNumberInput"] input::placeholder,
+      div[data-testid="stTextArea"] textarea::placeholder{
+        color:#5C8BFF !important;   /* placeholder azul suave */
+      }
+
+      /* Data editor en claro con encabezado celestito */
+      div[data-testid="stDataFrame"] thead tr th{
+        background: var(--brand-soft) !important;
+        color: var(--ink) !important;
+        border-bottom: 1px solid #d9e6ff !important;
+      }
+      div[data-testid="stDataFrame"] tbody tr td{
+        background: #11161f !important;
+        color: #ffffff !important;
+      }
+      div[data-testid="stDataFrame"] tbody tr td:last-child{
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* Botón principal – pastel */
+      .stButton>button{
+        background:#ffffff;
+        color:#0E1B2B;
+        border:1px solid #cfe0ff;
+        border-radius:20px;
+        padding:14px 22px;
+        box-shadow: 0 10px 30px rgba(31,111,255,0.10);
+        font-weight:600;
+      }
+      .stButton>button:hover{
+        border-color:#9bbcff;
+        box-shadow: 0 12px 40px rgba(31,111,255,0.18);
+      }
+
+      /* Tarjetas de KPIs (peso vol, aplicable) */
+      .kpi{
+        border-radius:14px; padding:18px 20px; border:1px solid #e7eefc;
+        background:#fff;
+      }
+      .kpi.lock{ background:#fff; }
+      .kpi .label{ color:var(--brand); font-weight:600; }
+      .kpi .value{ font-size:36px; font-weight:700; color:#0E1B2B; }
+
+      /* Bloques de sección */
+      .section{ margin-top: 18px; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+# -------------------- Helpers --------------------
+FACTOR_VOLUMETRICO = 5000  # cm³ / kg
+
+def new_table(rows:int=10) -> pd.DataFrame:
+    df = pd.DataFrame({
+        "Cantidad de bultos": np.zeros(rows, dtype=int),
+        "Ancho (cm)": np.zeros(rows, dtype=int),
+        "Alto (cm)": np.zeros(rows, dtype=int),
+        "Largo (cm)": np.zeros(rows, dtype=int),
+        "Peso vol. (kg)": np.zeros(rows, dtype=float),
+    })
+    return df
+
+def recalc_volumen():
+    """Callback para recalcular peso volumétrico dentro del editor."""
+    df = pd.DataFrame(st.session_state.bultos_editor)
+    # Asegurar tipos
+    for c in ["Cantidad de bultos", "Ancho (cm)", "Alto (cm)", "Largo (cm)"]:
+        df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0).astype(int)
+
+    vol_unit = (df["Ancho (cm)"] * df["Alto (cm)"] * df["Largo (cm)"]) / FACTOR_VOLUMETRICO
+    df["Peso vol. (kg)"] = np.round(vol_unit * df["Cantidad de bultos"], 2)
+
+    st.session_state.bultos_df = df
+
+def reset_form():
+    st.session_state.bultos_df = new_table()
+    st.session_state.nombre = ""
+    st.session_state.email = ""
+    st.session_state.telefono = ""
+    st.session_state.es_cliente = "No"
+    st.session_state.desc = ""
+    st.session_state.link = ""
+    st.session_state.peso_bruto = 0.0
+    st.session_state.valor_merc = 0.0
+    st.session_state.show_thanks = False
+
+# -------------------- Session Boot --------------------
+if "bultos_df" not in st.session_state:
+    reset_form()
+
+# -------------------- HERO --------------------
+st.markdown(
+    """
+    <div class="hero">
+      <h2>📦 Cotización de Envío por Courier</h2>
+      <p class="section-title">Completá tus datos y medidas. Te mandamos la cotización por email.</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+# -------------------- Contacto & producto --------------------
+st.markdown('<p class="section-title">Datos de contacto y del producto</p>', unsafe_allow_html=True)
+c1, c2, c3, c4 = st.columns([2.2, 2.2, 1.5, 1.3])
+
+with c1:
+    st.session_state.nombre = st.text_input("Nombre completo*", st.session_state.nombre, placeholder="Ej: Juan Pérez")
+with c2:
+    st.session_state.email = st.text_input("Correo electrónico*", st.session_state.email, placeholder="ejemplo@email.com")
+with c3:
+    st.session_state.telefono = st.text_input("Teléfono*", st.session_state.telefono, placeholder="Ej: 11 5555 5555")
+with c4:
+    st.session_state.es_cliente = st.radio("¿Cliente/alumno de Global Trip?", ["No", "Sí"], index=0 if st.session_state.es_cliente=="No" else 1, horizontal=True)
+
+st.session_state.desc = st.text_area("Descripción del producto*", st.session_state.desc, placeholder='Ej: "Máquina selladora de bolsas"', height=110)
+st.session_state.link = st.text_input("Link del producto o ficha técnica (Alibaba, Amazon, etc.)*", st.session_state.link, placeholder="https://...")
+
+st.markdown('<div class="section"></div>', unsafe_allow_html=True)
+
+# -------------------- Tabla de bultos (una sola) --------------------
+st.markdown('<p class="section-title">Bultos</p>', unsafe_allow_html=True)
+st.caption("Tip: usá el botón “+” al final de la tabla para agregar más bultos. Ingresá por bulto: cantidad y dimensiones en cm. El peso volumétrico se calcula solo.")
+
+edited = st.data_editor(
+    st.session_state.bultos_df,
+    key="bultos_editor",
     use_container_width=True,
-    hide_index=True,
-    disabled=["Peso vol. (kg)"],
+    num_rows="dynamic",
+    on_change=recalc_volumen,
     column_config={
-        "Cantidad de bultos": st.column_config.NumberColumn(min_value=0, step=1, help="Unidades por fila"),
-        "Ancho (cm)"       : st.column_config.NumberColumn(min_value=0, step=1),
-        "Alto (cm)"        : st.column_config.NumberColumn(min_value=0, step=1),
-        "Largo (cm)"       : st.column_config.NumberColumn(min_value=0, step=1),
-        "Peso vol. (kg)"   : st.column_config.NumberColumn(format="%.2f", help="Se completa al presionar Calcular"),
+        "Cantidad de bultos": st.column_config.NumberColumn("Cantidad de bultos", min_value=0, step=1, help="Solo números enteros"),
+        "Ancho (cm)": st.column_config.NumberColumn("Ancho (cm)", min_value=0, step=1),
+        "Alto (cm)": st.column_config.NumberColumn("Alto (cm)", min_value=0, step=1),
+        "Largo (cm)": st.column_config.NumberColumn("Largo (cm)", min_value=0, step=1),
+        "Peso vol. (kg)": st.column_config.NumberColumn("Peso vol. (kg)", format="%.2f", disabled=True),
     },
 )
-# Guardamos solo columnas editables (la calculada se pisa al apretar Calcular)
-st.session_state.df_bultos.update(df_edit[["Cantidad de bultos","Ancho (cm)","Alto (cm)","Largo (cm)"]])
 
-# Botón calcular (evita recálculo constante)
-if st.button("⚖️ Calcular volumétrico"):
-    st.session_state.df_bultos, st.session_state.peso_vol_total = calcular_volumetrico(st.session_state.df_bultos)
+# Garantizar cálculo actualizado también en primer render
+recalc_volumen()
+df_calc = st.session_state.bultos_df.copy()
 
-# =================== PESOS ===================
-st.subheader("Pesos")
-c1, c2, c3 = st.columns([1, 1, 1.2])
-with c1:
-    st.metric("Peso volumétrico (kg) 🔒", f"{st.session_state.peso_vol_total:.2f}")
+total_peso_vol = float(np.round(df_calc["Peso vol. (kg)"].sum(), 2))
 
-with c2:
-    # texto + placeholder -> al tipear se limpia, no se “escribe atrás” del 0.00
-    st.session_state.peso_bruto_txt = st.text_input(
-        "Peso bruto (kg)", value=st.session_state.peso_bruto_txt, placeholder="0.00",
-        help="Peso real total en balanza"
+# -------------------- Pesos y valor --------------------
+st.markdown('<div class="section"></div>', unsafe_allow_html=True)
+k1, k2, k3 = st.columns([1.1, 1.1, 1.1])
+
+with k1:
+    st.markdown('<div class="kpi lock"><div class="label">Peso volumétrico (kg) 🔒</div><div class="value">'
+                f'{total_peso_vol:,.2f}</div></div>', unsafe_allow_html=True)
+
+with k2:
+    st.session_state.peso_bruto = st.number_input(" ", value=float(st.session_state.peso_bruto), min_value=0.0, step=1.0,
+                                                  help="Peso bruto total del envío (kg)")
+    # pintar campo como chip oscuro
+    st.markdown(
+        f"""
+        <div class="kpi" style="background:#232833;border:1px solid #2d3647;color:#fff;margin-top:-74px;">
+          <div class="label" style="color:#9bbcff">Peso bruto (kg)</div>
+          <div class="value" style="color:#fff">{st.session_state.peso_bruto:,.2f}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
-with c3:
-    peso_bruto_num = parse_num(st.session_state.peso_bruto_txt)
-    peso_aplicable = max(st.session_state.peso_vol_total, peso_bruto_num)
-    st.metric("Peso aplicable (kg) 🔒", f"{peso_aplicable:.2f}")
+with k3:
+    peso_aplicable = max(total_peso_vol, float(st.session_state.peso_bruto))
+    st.markdown('<div class="kpi lock"><div class="label">Peso aplicable (kg) 🔒</div><div class="value">'
+                f'{peso_aplicable:,.2f}</div></div>', unsafe_allow_html=True)
 
-# =================== VALOR MERCADERÍA ===================
-st.subheader("Valor de la mercadería")
-st.session_state.valor_mercaderia_txt = st.text_input(
-    "Valor de la mercadería (USD)", value=st.session_state.valor_mercaderia_txt, placeholder="0.00"
-)
-valor_merc_num = parse_num(st.session_state.valor_mercaderia_txt)
+st.markdown('<div class="section"></div>', unsafe_allow_html=True)
+st.markdown('<p class="section-title">Valor de la mercadería</p>', unsafe_allow_html=True)
+st.session_state.valor_merc = st.number_input("Valor de la mercadería (USD)", value=float(st.session_state.valor_merc), min_value=0.0, step=10.0)
 
-# =================== CONTACTO Y PRODUCTO ===================
-st.subheader("Datos de contacto y del producto")
-colL, colR = st.columns(2)
-with colL:
-    nombre = st.text_input("Nombre completo*")
-    email  = st.text_input("Correo electrónico*")
-    tel    = st.text_input("Teléfono*")
-with colR:
-    es_cliente  = st.radio("¿Cliente/alumno de Global Trip?", ["No","Sí"], horizontal=True, index=0)
-    descripcion = st.text_area("Descripción del producto*")
-    link        = st.text_input("Link del producto o ficha técnica (Alibaba, Amazon, etc.)*")
+st.markdown('<div class="section"></div>', unsafe_allow_html=True)
 
-st.divider()
+# -------------------- Envío (webhook) --------------------
+def send_payload():
+    url = st.secrets.get("N8N_WEBHOOK_URL", os.getenv("N8N_WEBHOOK_URL", "")).strip()
+    payload = {
+        "timestamp": datetime.utcnow().isoformat(timespec="seconds"),
+        "origen": "streamlit-cotizador",
+        "contacto": {
+            "nombre": st.session_state.nombre.strip(),
+            "email": st.session_state.email.strip(),
+            "telefono": st.session_state.telefono.strip(),
+            "es_cliente": st.session_state.es_cliente,
+        },
+        "producto": {
+            "descripcion": st.session_state.desc.strip(),
+            "link": st.session_state.link.strip(),
+        },
+        "bultos": json.loads(df_calc.to_json(orient="records")),
+        "peso_vol_total": total_peso_vol,
+        "peso_bruto": st.session_state.peso_bruto,
+        "peso_aplicable": peso_aplicable,
+        "valor_mercaderia_usd": st.session_state.valor_merc,
+        "factor_vol": FACTOR_VOLUMETRICO,
+    }
 
-# =================== SOLICITAR COTIZACIÓN ===================
-if st.button("📨 Solicitar cotización", type="primary"):
-    st.session_state.mostrar_modal = True
+    if not url:
+        st.error("No se encontró la URL de webhook. Configurá **N8N_WEBHOOK_URL** en *Secrets*.")
+        return False
 
-if st.session_state.mostrar_modal:
-    with st.modal("Confirmar envío"):
-        st.write("Revisá que los datos estén correctos antes de enviar.")
-        st.write("**Resumen**")
-        st.write(f"- Nombre: {nombre or '—'}")
-        st.write(f"- Email: {email or '—'}")
-        st.write(f"- Teléfono: {tel or '—'}")
-        st.write(f"- ¿Cliente/alumno?: {es_cliente}")
-        st.write(f"- Descripción: {descripcion or '—'}")
-        st.write(f"- Link: {link or '—'}")
-        st.write(f"- Peso volumétrico total: **{st.session_state.peso_vol_total:.2f} kg**")
-        st.write(f"- Peso bruto: **{peso_bruto_num:.3f} kg**")
-        st.write(f"- Peso aplicable: **{peso_aplicable:.2f} kg**")
-        st.write(f"- Valor mercadería: **USD {valor_merc_num:.2f}**")
+    try:
+        r = requests.post(url, json=payload, timeout=12)
+        if r.ok:
+            return True
+        st.error(f"El servidor respondió {r.status_code}.")
+    except Exception as e:
+        st.error(f"No se pudo enviar: {e}")
+    return False
 
-        b1, b2, b3 = st.columns([1,1,1.2])
-        enviar = b1.button("Enviar", key="btn_enviar")
-        otra   = b2.button("Solicitar otra cotización", key="btn_otra")
-        cerrar = b3.button("Cerrar", key="btn_cerrar")
+c_submit = st.columns([1, 6, 1])[0]
+with c_submit:
+    if st.button("📨 Solicitar cotización"):
+        ok = send_payload()
+        if ok:
+            st.session_state.show_thanks = True
 
-        if enviar:
-            payload = {
-                "contacto": {
-                    "nombre": nombre, "email": email, "tel": tel, "cliente_alumno": es_cliente
-                },
-                "producto": {"descripcion": descripcion, "link": link},
-                "bultos": st.session_state.df_bultos.fillna(0).to_dict(orient="records"),
-                "pesos": {
-                    "volumetrico": round(st.session_state.peso_vol_total, 2),
-                    "bruto": round(peso_bruto_num, 3),
-                    "aplicable": round(peso_aplicable, 2),
-                },
-                "valor_mercaderia_usd": round(valor_merc_num, 2),
-            }
-
-            webhook = get_webhook_url()
-            if not webhook:
-                st.warning("Falta **N8N_WEBHOOK_URL** en Secrets o variables de entorno.")
-            else:
-                try:
-                    r = requests.post(webhook, json=payload, timeout=15)
-                    if r.status_code < 400:
-                        st.success("¡Enviado! ✅ Te respondemos por email.")
-                        time.sleep(1.0)
-                        st.session_state.mostrar_modal = False
-                        resetear_form()
-                        st.rerun()
-                    else:
-                        st.error(f"El webhook respondió {r.status_code}. Revisá n8n.")
-                except Exception as e:
-                    st.error(f"No pude enviar al webhook. Detalle: {e}")
-
-        if otra:
-            st.session_state.mostrar_modal = False
-            resetear_form()
-            st.rerun()
-
-        if cerrar:
-            st.session_state.mostrar_modal = False
-            st.rerun()
+# -------------------- “Popup” de gracias --------------------
+if st.session_state.get("show_thanks"):
+    st.success("¡Gracias! En breve recibirás tu cotización por email.")
+    cc1, cc2 = st.columns([1,1])
+    with cc1:
+        if st.button("🆕 Cargar otra cotización"):
+            reset_form()
+            st.experimental_rerun()
+    with cc2:
+        if st.button("Cerrar"):
+            st.session_state.show_thanks = False

@@ -230,7 +230,7 @@ def validate():
 col_logo, col_title = st.columns([0.18, 0.82])
 with col_logo:
     if Path(LOGO_PATH).exists():
-        st.image(LOGO_PATH, use_column_width=True)
+        st.image(LOGO_PATH, use_container_width=True)
 with col_title:
     st.markdown("""
     <div class="soft-card">

@@ -3,6 +3,7 @@ from __future__ import annotations
 import os, json, requests
 from datetime import datetime
 
+import numpy as np
 import streamlit as st
 
 # -------------------- Config --------------------
@@ -97,7 +98,7 @@ div.stButton > button:hover{ background:#f6f9ff !important; }
   border-radius:16px; background:#eef5ff; color:#000033; padding:14px 16px;
   cursor:pointer; font-size:18px; text-decoration:none; }
 
-/* Acciones de bultos: una fila en desktop, apiladas en mobile */
+/* Acciones de bultos: fila en desktop, apiladas en mobile */
 @media (min-width: 900px){
   .gt-bultos-actions{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
 }
@@ -117,11 +118,7 @@ div.stButton > button:hover{ background:#f6f9ff !important; }
 FACTOR_VOL = 5000
 
 def init_state():
-    # Fila inicial con ID estable (importante para que los inputs no "salten")
-    st.session_state.setdefault("rows_uid_counter", 1)
-    st.session_state.setdefault("rows", [
-        {"id": 1, "cant": 0, "ancho": 0.0, "alto": 0.0, "largo": 0.0}
-    ])
+    st.session_state.setdefault("rows", [{"cant":0, "ancho":0, "alto":0, "largo":0}])
     st.session_state.setdefault("nombre","")
     st.session_state.setdefault("email","")
     st.session_state.setdefault("telefono","")
@@ -136,52 +133,36 @@ def init_state():
     st.session_state.setdefault("form_errors", [])
 init_state()
 
-def new_row():
-    st.session_state.rows_uid_counter += 1
-    return {"id": st.session_state.rows_uid_counter, "cant": 0, "ancho": 0.0, "alto": 0.0, "largo": 0.0}
-
-# -------------------- Callbacks (evitan “doble click” y lag) --------------------
-def cb_add_row():
-    st.session_state.rows.append(new_row())
-    st.rerun()
-
-def cb_clear_rows():
-    st.session_state.rows_uid_counter = 1
-    st.session_state.rows = [{"id": 1, "cant": 0, "ancho": 0.0, "alto": 0.0, "largo": 0.0}]
-    st.rerun()
-
-def cb_remove_last():
-    if len(st.session_state.rows) > 1:
-        st.session_state.rows.pop()
-    st.rerun()
-
 # -------------------- QS helpers (manejo ?gt=...) --------------------
 def get_qs():
     try: return dict(st.query_params)
     except: return {}
+
 def set_qs(**kwargs):
     try:
         st.query_params.clear()
         for k,v in kwargs.items(): st.query_params[k] = v
-    except: pass
-def rerun():
+    except: 
+        pass
+
+def safe_rerun():
+    # Usar sólo fuera de callbacks (p.ej., al manejar query params)
     try: st.rerun()
     except: st.experimental_rerun()
 
 _qs = get_qs()
 if _qs.get("gt","") == "reset":
     st.session_state.update({
-        "rows_uid_counter": 1,
-        "rows":[{"id":1,"cant":0,"ancho":0.0,"alto":0.0,"largo":0.0}],
+        "rows":[{"cant":0, "ancho":0, "alto":0, "largo":0}],
         "nombre":"", "email":"", "telefono":"", "es_cliente":"No",
         "descripcion":"", "link":"",
         "peso_bruto_raw":"0.00", "peso_bruto":0.0,
         "valor_mercaderia_raw":"0.00", "valor_mercaderia":0.0,
         "show_dialog": False, "form_errors":[]
     })
-    set_qs(); rerun()
+    set_qs(); safe_rerun()
 elif _qs.get("gt","") == "close":
-    st.session_state.show_dialog = False; set_qs(); rerun()
+    st.session_state.show_dialog = False; set_qs(); safe_rerun()
 
 # -------------------- Helpers --------------------
 def to_float(s, default=0.0):
@@ -214,12 +195,22 @@ def validate():
     if not st.session_state.descripcion.strip(): errs.append("• Descripción del producto es obligatoria.")
     if not st.session_state.link.strip(): errs.append("• Link del producto/ficha técnica es obligatorio.")
     hay_medidas = any(
-        to_float(r["cant"])>0 and
-        (to_float(r["ancho"])+to_float(r["alto"])+to_float(r["largo"]))>0
+        to_float(r["cant"])>0 and (to_float(r["ancho"])+to_float(r["alto"])+to_float(r["largo"]))>0
         for r in st.session_state.rows
     )
     if not hay_medidas: errs.append("• Ingresá al menos un bulto con **cantidad** y **medidas**.")
     return errs
+
+# -------------------- Callbacks (sin rerun adentro) --------------------
+def add_row():
+    st.session_state.rows.append({"cant": 0, "ancho": 0, "alto": 0, "largo": 0})
+
+def clear_rows():
+    st.session_state.rows = [{"cant": 0, "ancho": 0, "alto": 0, "largo": 0}]
+
+def remove_last():
+    if len(st.session_state.rows) > 1:
+        st.session_state.rows.pop()
 
 # -------------------- UI --------------------
 st.markdown("""
@@ -254,39 +245,35 @@ st.write("")
 st.subheader("Bultos")
 st.caption("Cargá por bulto: **cantidad** y **dimensiones en cm**. Calculamos el **peso volumétrico**.")
 
-# Filas de bultos (keys estables por ID para evitar flicker)
-for r in st.session_state.rows:
-    rid = r["id"]
+# Filas de bultos (labels sobre cada input)
+for i, r in enumerate(st.session_state.rows):
     cols = st.columns([0.9, 1, 1, 1])
     with cols[0]:
-        r["cant"] = st.number_input("Cantidad", min_value=0, step=1,
-                                    value=int(r.get("cant",0)), key=f"cant_{rid}")
+        st.session_state.rows[i]["cant"] = st.number_input("Cantidad", min_value=0, step=1,
+                                                           value=int(r["cant"]), key=f"cant_{i}")
     with cols[1]:
-        r["ancho"] = st.number_input("Ancho (cm)", min_value=0.0, step=1.0,
-                                     value=float(r.get("ancho",0.0)), key=f"an_{rid}")
+        st.session_state.rows[i]["ancho"] = st.number_input("Ancho (cm)", min_value=0.0, step=1.0,
+                                                            value=float(r["ancho"]), key=f"an_{i}")
     with cols[2]:
-        r["alto"] = st.number_input("Alto (cm)", min_value=0.0, step=1.0,
-                                    value=float(r.get("alto",0.0)), key=f"al_{rid}")
+        st.session_state.rows[i]["alto"] = st.number_input("Alto (cm)", min_value=0.0, step=1.0,
+                                                           value=float(r["alto"]), key=f"al_{i}")
     with cols[3]:
-        r["largo"] = st.number_input("Largo (cm)", min_value=0.0, step=1.0,
-                                     value=float(r.get("largo",0.0)), key=f"lar_{rid}")
+        st.session_state.rows[i]["largo"] = st.number_input("Largo (cm)", min_value=0.0, step=1.0,
+                                                            value=float(r["largo"]), key=f"lar_{i}")
 
-# Acciones (desktop en fila; mobile apiladas). Fondo blanco ya por CSS global.
+# Acciones (desktop en fila; mobile apiladas). Fondos blancos por CSS global.
 st.markdown('<div class="gt-bultos-actions">', unsafe_allow_html=True)
 cA, cB, cC = st.columns(3)
 with cA:
-    st.button("➕ Agregar bulto", use_container_width=True,
-              key="btn_add_row", on_click=cb_add_row)
+    st.button("➕ Agregar bulto", use_container_width=True, on_click=add_row)
 with cB:
-    st.button("🧹 Vaciar tabla", use_container_width=True,
-              key="btn_clear_rows", on_click=cb_clear_rows)
+    st.button("🧹 Vaciar tabla", use_container_width=True, on_click=clear_rows)
 with cC:
     st.button("🗑️ Eliminar último", use_container_width=True,
-              key="btn_remove_last", disabled=(len(st.session_state.rows) <= 1),
-              on_click=cb_remove_last)
+              on_click=remove_last, disabled=(len(st.session_state.rows) <= 1))
 st.markdown('</div>', unsafe_allow_html=True)
 
-# Pesos (un único dato: Peso aplicable)
+# Pesos (unificamos en un solo dato: Peso aplicable)
 st.write("")
 st.subheader("Pesos")
 m1, m2 = st.columns([1.2, 1.0])
@@ -301,10 +288,11 @@ total_peso_vol = compute_total_vol(st.session_state.rows)
 peso_aplicable = max(total_peso_vol, st.session_state.peso_bruto)
 
 with m2:
-    st.markdown(
-        f'<div class="gt-pill"><span>Peso aplicable (kg) 🔒</span> <b>{peso_aplicable:,.2f}</b></div>',
-        unsafe_allow_html=True
-    )
+    st.markdown(f"""
+    <div class="gt-pill">
+      <span>Peso aplicable (kg) 🔒</span> <b>{peso_aplicable:,.2f}</b>
+    </div>
+    """, unsafe_allow_html=True)
     st.caption(f"Se toma el mayor entre volumétrico ({total_peso_vol:,.2f}) y bruto ({st.session_state.peso_bruto:,.2f}).")
 
 # Valor mercadería
@@ -345,10 +333,8 @@ if submit_clicked:
             },
             "valor_mercaderia_usd": st.session_state.valor_mercaderia
         }
-        try:
-            post_to_webhook(payload)   # opcional, best-effort
-        except:
-            pass
+        try: post_to_webhook(payload)
+        except: pass
         st.session_state.show_dialog = True
 
 # Errores

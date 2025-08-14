@@ -19,7 +19,8 @@ html, body, .stApp, [data-testid="stAppViewContainer"],
 section.main, [data-testid="stHeader"], [data-testid="stSidebar"]{
   background:#FFFFFF !important; color:#000033 !important;
 }
-/* TODO el texto */
+
+/* TODO el texto en #000033 */
 body, .stApp, div, p, span, label, h1,h2,h3,h4,h5,h6, a, small, strong, em, th, td,
 div[data-testid="stMarkdownContainer"] * { color:#000033 !important; }
 a { text-decoration:none; }
@@ -55,12 +56,6 @@ div[data-testid="stMetric"]{
 }
 div[data-testid="stMetricLabel"], div[data-testid="stMetricValue"]{ color:#000033 !important; }
 
-/* Botón */
-div.stButton > button{
-  border:1.5px solid #dfe7ef; border-radius:16px;
-  background:#fff; color:#000033; padding:14px 18px; box-shadow:0 10px 22px rgba(17,24,39,.09);
-}
-
 /* Data editor claro */
 [data-testid="stDataFrame"]{
   background:#fff; border:1.5px solid #dfe7ef; border-radius:16px; box-shadow:0 8px 18px rgba(17,24,39,.07); overflow:hidden;
@@ -78,6 +73,19 @@ div.stButton > button{
   background:#fff !important; color:#000033 !important;
   border:1.5px solid #dfe7ef !important; border-radius:18px !important;
   box-shadow:0 18px 40px rgba(17,24,39,.25) !important;
+}
+
+/* Botón de submit (wrapper .gt-submit) */
+.gt-submit div.stButton > button, .gt-submit button[kind="primary"]{
+  width:100%; background:#FFFFFF !important; color:#000033 !important;
+  border:2px solid rgba(0,0,51,.18) !important; border-radius:16px !important;
+  padding:14px 18px !important; box-shadow:0 6px 14px rgba(0,0,0,.08) !important;
+  transition:transform .04s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.gt-submit div.stButton > button:hover{ border-color:rgba(0,0,51,.45) !important; box-shadow:0 8px 18px rgba(0,0,0,.12) !important; }
+.gt-submit div.stButton > button:active{ transform: translateY(1px); }
+.gt-submit div.stButton > button:disabled{
+  background:#f5f7fb !important; color:#000033 !important; opacity:.6 !important; cursor:not-allowed !important; box-shadow:none !important;
 }
 
 /* Fallback overlay (si no hay st.modal) */
@@ -222,7 +230,10 @@ with st.form("cotizador", clear_on_submit=False):
         pass
 
     st.write("")
-    submitted = st.form_submit_button("📨 Solicitar cotización")
+    # Botón estilizado (clase wrapper .gt-submit)
+    st.markdown('<div class="gt-submit">', unsafe_allow_html=True)
+    submitted = st.form_submit_button("📨 Solicitar cotización", type="primary", use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------- Submit --------------------
 if submitted:
@@ -261,7 +272,8 @@ if submitted:
             },
             "valor_mercaderia_usd": float(st.session_state.valor_mercaderia)
         }
-        post_to_webhook(payload)
+        with st.spinner("Enviando…"):
+            post_to_webhook(payload)
         st.session_state.show_modal = True
 
 # -------------------- Popup post-submit --------------------
@@ -301,4 +313,3 @@ if st.session_state.get("show_modal", False):
             '})();</script>'
         )
         components.html(html, height=1, scrolling=False)
-

@@ -7,7 +7,12 @@ import numpy as np
 import streamlit as st
 
 # -------------------- Config --------------------
-st.set_page_config(page_title="Cotizador GlobalTrip", page_icon="📦", layout="wide")
+st.set_page_config(
+    page_title="Cotizador GlobalTrip",
+    page_icon="📦",           # favicon cajita
+    layout="wide",
+    initial_sidebar_state="collapsed",  # oculta la sidebar
+)
 
 # -------------------- Estilos (claro forzado + #000033) --------------------
 st.markdown("""
@@ -18,6 +23,16 @@ html, body, .stApp, [data-testid="stAppViewContainer"],
 section.main, [data-testid="stHeader"], [data-testid="stSidebar"]{
   background:#FFFFFF !important; color:#000033 !important;
 }
+
+/* Ocultar chrome de Streamlit Cloud (Share, ⋮, footer, etc.) */
+#MainMenu,
+footer,
+[data-testid="stToolbar"],
+header [data-testid="baseButton-header"],
+header .stDeployButton,
+.viewerBadge_container__1QSob,
+.viewerBadge_link__1S137 { display:none !important; }
+header { visibility:hidden !important; height:0 !important; }
 
 /* Texto #000033 */
 div, p, span, label, h1,h2,h3,h4,h5,h6, a, small, strong, em, th, td,

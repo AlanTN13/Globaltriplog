@@ -70,11 +70,13 @@ div[data-testid="stMetricLabel"], div[data-testid="stMetricValue"]{ color:#00003
   background:#fff !important; color:#000033 !important; border-color:#dfe7ef !important;
 }
 
-/* ===== Botón del FORM (form_submit_button) – claro + BORDE AZUL =====
-   Target explícito del botón del formulario para que NO lo pise el tema */
+/* ===== Botón "Solicitar cotización": CLARO + BORDE AZUL =====
+   Atacamos TODAS las variantes posibles para que nunca salga oscuro */
+.gt-submit button,
 .gt-submit [data-testid="baseButton-secondaryFormSubmit"],
-.gt-submit button[kind="secondaryFormSubmit"]{
-  width:100%;
+.gt-submit [data-testid="baseButton-primary"],
+.gt-submit div.stButton > button{
+  width:100% !important;
   background:#f3f5fb !important;
   color:#000033 !important;
   border:2px solid #000033 !important;
@@ -82,17 +84,22 @@ div[data-testid="stMetricLabel"], div[data-testid="stMetricValue"]{ color:#00003
   padding:14px 18px !important;
   box-shadow:0 4px 10px rgba(0,16,64,.08) !important;
   transition:transform .04s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
+  filter:none !important;
 }
+.gt-submit button:hover,
 .gt-submit [data-testid="baseButton-secondaryFormSubmit"]:hover,
-.gt-submit button[kind="secondaryFormSubmit"]:hover{
+.gt-submit [data-testid="baseButton-primary"]:hover,
+.gt-submit div.stButton > button:hover{
   background:#eef3ff !important;
   box-shadow:0 6px 14px rgba(0,16,64,.12) !important;
 }
+.gt-submit button:active,
 .gt-submit [data-testid="baseButton-secondaryFormSubmit"]:active,
-.gt-submit button[kind="secondaryFormSubmit"]:active{ transform: translateY(1px); }
+.gt-submit [data-testid="baseButton-primary"]:active,
+.gt-submit div.stButton > button:active{ transform: translateY(1px); }
 
 /* ===== Overlay (popup) ===== */
-.gt-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999; display:flex; align-items:center; justify-content:center; }
+.gt-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:999999; display:flex; align-items:center; justify-content:center; }
 .gt-modal{ max-width:680px; width:92%; background:#fff; color:#000033; border:1.5px solid #dfe7ef; border-radius:18px; padding:28px 24px; box-shadow:0 18px 40px rgba(17,24,39,.25); }
 .gt-modal h3{ margin:0 0 8px 0; font-size:30px; font-weight:800; }
 .gt-modal p{ margin:10px 0; font-size:18px; }
@@ -143,7 +150,7 @@ def reset_form():
         "show_dialog": False
     })
 
-# -------------------- QueryString helpers (SIN experimental_) --------------------
+# -------------------- QS helpers (sin experimental) --------------------
 def get_qs():
     try:
         return dict(st.query_params)
@@ -153,17 +160,20 @@ def get_qs():
 def set_qs(**kwargs):
     try:
         st.query_params.clear()
-        for k, v in kwargs.items():
-            st.query_params[k] = v
+        for k, v in kwargs.items(): st.query_params[k] = v
     except Exception:
         pass
 
-# Acciones desde el popup (por query string)
+def rerun():
+    try: st.rerun()
+    except: st.experimental_rerun()
+
+# Acciones del popup por querystring
 _qs = get_qs()
 if _qs.get("gt", "") == "reset":
-    reset_form(); set_qs(); st.rerun()
+    reset_form(); set_qs(); rerun()
 elif _qs.get("gt", "") == "close":
-    st.session_state.show_dialog = False; set_qs(); st.rerun()
+    st.session_state.show_dialog = False; set_qs(); rerun()
 
 # -------------------- Utilidades --------------------
 def compute_vol(df: pd.DataFrame):
@@ -200,71 +210,70 @@ st.markdown("""
 """, unsafe_allow_html=True)
 st.write("")
 
-# Formulario
-with st.form("cotizador", clear_on_submit=False):
-    st.subheader("Datos de contacto y del producto")
-    c1,c2,c3,c4 = st.columns([1.1,1.1,1.0,0.9])
-    with c1:
-        st.session_state.nombre = st.text_input("Nombre completo*", value=st.session_state.nombre, placeholder="Ej: Juan Pérez")
-    with c2:
-        st.session_state.email = st.text_input("Correo electrónico*", value=st.session_state.email, placeholder="ejemplo@email.com")
-    with c3:
-        st.session_state.telefono = st.text_input("Teléfono*", value=st.session_state.telefono, placeholder="Ej: 11 5555 5555")
-    with c4:
-        st.session_state.es_cliente = st.radio("¿Cliente/alumno de Global Trip?", ["No","Sí"],
-                                               index=0 if st.session_state.es_cliente=="No" else 1, horizontal=True)
+# --------- Campos (sin st.form) ---------
+st.subheader("Datos de contacto y del producto")
+c1,c2,c3,c4 = st.columns([1.1,1.1,1.0,0.9])
+with c1:
+    st.session_state.nombre = st.text_input("Nombre completo*", value=st.session_state.nombre, placeholder="Ej: Juan Pérez")
+with c2:
+    st.session_state.email = st.text_input("Correo electrónico*", value=st.session_state.email, placeholder="ejemplo@email.com")
+with c3:
+    st.session_state.telefono = st.text_input("Teléfono*", value=st.session_state.telefono, placeholder="Ej: 11 5555 5555")
+with c4:
+    st.session_state.es_cliente = st.radio("¿Cliente/alumno de Global Trip?", ["No","Sí"],
+                                           index=0 if st.session_state.es_cliente=="No" else 1, horizontal=True)
 
-    st.session_state.descripcion = st.text_area("Descripción del producto*", value=st.session_state.descripcion,
-                                                placeholder='Ej: "Máquina selladora de bolsas"')
-    st.session_state.link = st.text_input("Link del producto o ficha técnica (Alibaba, Amazon, etc.)*",
-                                          value=st.session_state.link, placeholder="https://...")
+st.session_state.descripcion = st.text_area("Descripción del producto*", value=st.session_state.descripcion,
+                                            placeholder='Ej: "Máquina selladora de bolsas"')
+st.session_state.link = st.text_input("Link del producto o ficha técnica (Alibaba, Amazon, etc.)*",
+                                      value=st.session_state.link, placeholder="https://...")
 
-    st.write("")
-    st.subheader("Bultos")
-    st.caption("Tip: usá el botón “+” al final de la tabla para agregar más bultos. Ingresá por bulto: cantidad y dimensiones en **cm**. El **peso volumétrico** se calcula solo.")
+st.write("")
+st.subheader("Bultos")
+st.caption("Tip: usá el botón “+” al final de la tabla para agregar más bultos. Ingresá por bulto: cantidad y dimensiones en **cm**. El **peso volumétrico** se calcula solo.")
 
-    col_cfg = {
-        "Cantidad de bultos": st.column_config.NumberColumn("Cantidad de bultos", min_value=0, step=1, help="Sólo enteros"),
-        "Ancho (cm)": st.column_config.NumberColumn("Ancho (cm)", min_value=0, step=1),
-        "Alto (cm)": st.column_config.NumberColumn("Alto (cm)", min_value=0, step=1),
-        "Largo (cm)": st.column_config.NumberColumn("Largo (cm)", min_value=0, step=1),
-        "Peso vol. (kg)": st.column_config.NumberColumn("Peso vol. (kg)", step=0.01, disabled=True, help="Auto"),
-    }
-    edited = st.data_editor(st.session_state.df, key="bultos_editor", num_rows="dynamic",
-                            use_container_width=True, hide_index=True, column_config=col_cfg)
-    st.session_state.df, total_peso_vol = compute_vol(edited)
+col_cfg = {
+    "Cantidad de bultos": st.column_config.NumberColumn("Cantidad de bultos", min_value=0, step=1, help="Sólo enteros"),
+    "Ancho (cm)": st.column_config.NumberColumn("Ancho (cm)", min_value=0, step=1),
+    "Alto (cm)": st.column_config.NumberColumn("Alto (cm)", min_value=0, step=1),
+    "Largo (cm)": st.column_config.NumberColumn("Largo (cm)", min_value=0, step=1),
+    "Peso vol. (kg)": st.column_config.NumberColumn("Peso vol. (kg)", step=0.01, disabled=True, help="Auto"),
+}
+edited = st.data_editor(st.session_state.df, key="bultos_editor", num_rows="dynamic",
+                        use_container_width=True, hide_index=True, column_config=col_cfg)
+st.session_state.df, total_peso_vol = compute_vol(edited)
 
-    st.write("")
-    st.subheader("Pesos")
-    m1, mMid, m2 = st.columns([1.1,1.1,1.1])
-    with m1:
-        st.metric("Peso volumétrico (kg) 🔒", f"{total_peso_vol:,.2f}")
-    with mMid:
-        st.session_state.peso_bruto_raw = st.text_input("Peso bruto (kg)", value=st.session_state.peso_bruto_raw,
-                                                        help="Usá punto o coma para decimales (ej: 1.25)")
-        try:
-            st.session_state.peso_bruto = max(0.0, float(st.session_state.peso_bruto_raw.replace(",", ".")))
-        except Exception:
-            pass
-    with m2:
-        peso_aplicable = max(total_peso_vol, float(st.session_state.peso_bruto))
-        st.metric("Peso aplicable (kg) 🔒", f"{peso_aplicable:,.2f}")
-
-    st.subheader("Valor de la mercadería")
-    st.session_state.valor_mercaderia_raw = st.text_input("Valor de la mercadería (USD)", value=st.session_state.valor_mercaderia_raw)
+st.write("")
+st.subheader("Pesos")
+m1, mMid, m2 = st.columns([1.1,1.1,1.1])
+with m1:
+    st.metric("Peso volumétrico (kg) 🔒", f"{total_peso_vol:,.2f}")
+with mMid:
+    st.session_state.peso_bruto_raw = st.text_input("Peso bruto (kg)", value=st.session_state.peso_bruto_raw,
+                                                    help="Usá punto o coma para decimales (ej: 1.25)")
     try:
-        st.session_state.valor_mercaderia = max(0.0, float(st.session_state.valor_mercaderia_raw.replace(",", ".")))
+        st.session_state.peso_bruto = max(0.0, float(st.session_state.peso_bruto_raw.replace(",", ".")))
     except Exception:
         pass
+with m2:
+    peso_aplicable = max(total_peso_vol, float(st.session_state.peso_bruto))
+    st.metric("Peso aplicable (kg) 🔒", f"{peso_aplicable:,.2f}")
 
-    st.write("")
-    # Wrapper para aplicar estilos específicos del botón del FORM
-    st.markdown('<div class="gt-submit">', unsafe_allow_html=True)
-    submitted = st.form_submit_button("📨 Solicitar cotización", use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+st.subheader("Valor de la mercadería")
+st.session_state.valor_mercaderia_raw = st.text_input("Valor de la mercadería (USD)", value=st.session_state.valor_mercaderia_raw)
+try:
+    st.session_state.valor_mercaderia = max(0.0, float(st.session_state.valor_mercaderia_raw.replace(",", ".")))
+except Exception:
+    pass
 
-# Submit
-if submitted:
+# --------- Botón Submit ---------
+st.write("")
+st.markdown('<div class="gt-submit">', unsafe_allow_html=True)
+submit_clicked = st.button("📨 Solicitar cotización", use_container_width=True, key="gt_submit_btn")
+st.markdown('</div>', unsafe_allow_html=True)
+
+# --------- Submit handler ---------
+if submit_clicked:
     errores = []
     if not st.session_state.nombre.strip(): errores.append("• Nombre es obligatorio.")
     if not st.session_state.email.strip() or "@" not in st.session_state.email: errores.append("• Email válido es obligatorio.")
@@ -304,7 +313,7 @@ if submitted:
         except: pass
         st.session_state.show_dialog = True
 
-# Popup (HTML overlay – compatible con todas las versiones)
+# --------- Popup (HTML overlay compatible) ---------
 if st.session_state.get("show_dialog", False):
     email = (st.session_state.email or "").strip()
     email_html = f"<a href='mailto:{email}'>{email}</a>" if email else "tu correo"

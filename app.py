@@ -6,12 +6,11 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import streamlit as st
-import streamlit.components.v1 as components
 
-# -------------------- Config --------------------
+# --------------- Config ---------------
 st.set_page_config(page_title="Cotizador GlobalTrip", page_icon="📦", layout="wide")
 
-# -------------------- Estilos: fondo claro + texto #000033 + botón coherente --------------------
+# --------------- Estilos (fondo claro + #000033 + botón borde azul) ---------------
 st.markdown("""
 <style>
 :root { color-scheme: light !important; }
@@ -45,7 +44,7 @@ div[data-testid="stTextArea"] textarea:focus{
 div[data-testid="stTextInput"] input::placeholder,
 div[data-testid="stTextArea"] textarea::placeholder{ color:#000033 !important; opacity:.55 !important; }
 
-/* Radio */
+/* Radio chips */
 div[data-testid="stRadio"] label{
   background:#fff; border:1.5px solid #dfe7ef; border-radius:14px;
   padding:8px 12px; margin-right:8px; color:#000033 !important;
@@ -70,43 +69,45 @@ div[data-testid="stMetricLabel"], div[data-testid="stMetricValue"]{ color:#00003
   background:#fff !important; color:#000033 !important; border-color:#dfe7ef !important;
 }
 
-/* Modal nativo */
+/* Botón principal: claro + BORDE AZUL (imagen 2) */
+.gt-submit div.stButton > button{
+  width:100%;
+  background:#f3f5fb !important;         /* fondo claro */
+  color:#000033 !important;               /* texto azul oscuro */
+  border:2px solid #000033 !important;    /* borde azul */
+  border-radius:16px !important;
+  padding:14px 18px !important;
+  box-shadow:0 4px 10px rgba(0,16,64,.08) !important;
+  transition:transform .04s ease, box-shadow .2s ease, background .2s ease;
+}
+.gt-submit div.stButton > button:hover{
+  background:#eef3ff !important;
+  box-shadow:0 6px 14px rgba(0,16,64,.12) !important;
+}
+.gt-submit div.stButton > button:active{ transform: translateY(1px); }
+
+/* Modal nativo + botones del modal estilo pill */
 [data-testid="stModal"] > div {
   background:#fff !important; color:#000033 !important;
   border:1.5px solid #dfe7ef !important; border-radius:18px !important;
   box-shadow:0 18px 40px rgba(17,24,39,.25) !important;
 }
-
-/* BOTÓN (coherente con inputs) */
-div.stButton > button{
+.gt-modal-actions .stButton > button{
   width:100%;
-  background:#FFFFFF !important;
+  background:#eef5ff !important;
   color:#000033 !important;
   border:1.5px solid #dfe7ef !important;
   border-radius:16px !important;
   padding:14px 18px !important;
-  box-shadow:0 6px 14px rgba(17,24,39,.08) !important;
-  transition:transform .04s ease, box-shadow .2s ease, border-color .2s ease;
 }
-div.stButton > button:hover{
-  border-color:#c7d4e2 !important;
-  box-shadow:0 10px 22px rgba(17,24,39,.12) !important;
-}
-div.stButton > button:active{ transform: translateY(1px); }
-
-/* Fallback overlay */
-.gt-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999; display:flex; align-items:center; justify-content:center; }
-.gt-modal{ max-width:640px; width:92%; background:#fff; color:#000033; border:1.5px solid #dfe7ef; border-radius:18px; padding:22px; box-shadow:0 18px 40px rgba(17,24,39,.25); }
-.gt-actions{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px; }
-.gt-btn{ display:inline-block; text-align:center; border:1.5px solid #dfe7ef; border-radius:16px; background:#f0f7ff; color:#000033; padding:12px 16px; cursor:pointer; }
 </style>
 """, unsafe_allow_html=True)
 
-# -------------------- Constantes --------------------
+# --------------- Constantes ---------------
 FACTOR_VOL = 5000
 DEFAULT_ROWS = 10
 
-# -------------------- Estado --------------------
+# --------------- Estado ---------------
 def init_state():
     if "df" not in st.session_state:
         st.session_state.df = pd.DataFrame({
@@ -144,6 +145,7 @@ def reset_form():
         "show_modal": False
     })
 
+# --------------- Helpers ---------------
 def compute_vol(df: pd.DataFrame):
     calc = df[["Cantidad de bultos","Ancho (cm)","Alto (cm)","Largo (cm)"]].fillna(0).astype(float)
     per_row = (calc["Cantidad de bultos"] * calc["Ancho (cm)"] * calc["Alto (cm)"] * calc["Largo (cm)"]) / FACTOR_VOL
@@ -168,7 +170,7 @@ def post_to_webhook(payload: dict):
 
 init_state()
 
-# -------------------- UI --------------------
+# --------------- UI ---------------
 st.markdown("""
 <div class="soft-card">
   <h2 style="margin:0;">📦 Cotización de Envío por Courier</h2>
@@ -234,10 +236,12 @@ with st.form("cotizador", clear_on_submit=False):
         pass
 
     st.write("")
-    # Botón (sin 'type="primary"' para evitar rojo del tema)
+    # Botón con wrapper para el estilo
+    st.markdown('<div class="gt-submit">', unsafe_allow_html=True)
     submitted = st.form_submit_button("📨 Solicitar cotización", use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# -------------------- Submit --------------------
+# --------------- Submit ---------------
 if submitted:
     errores = []
     if not st.session_state.nombre.strip(): errores.append("• Nombre es obligatorio.")
@@ -276,41 +280,27 @@ if submitted:
         }
         with st.spinner("Enviando…"):
             post_to_webhook(payload)
+        # Mostramos popup sin limpiar, para que "Cerrar" mantenga datos
         st.session_state.show_modal = True
 
-# -------------------- Popup post-submit --------------------
+# --------------- Popup post-submit ---------------
 if st.session_state.get("show_modal", False):
     email = (st.session_state.email or "").strip()
     email_html = f"<a href='mailto:{email}'>{email}</a>" if email else "tu correo"
-
-    if hasattr(st, "modal"):  # modal nativo
-        with st.modal("¡Listo!"):
-            st.markdown("Recibimos tu solicitud. En breve te llegará la cotización a " + email_html + ".", unsafe_allow_html=True)
-            st.caption("Podés cargar otra si querés.")
-            cA, cB = st.columns(2)
-            with cA:
-                if st.button("➕ Cargar otra cotización", use_container_width=True):
-                    reset_form(); st.rerun()
-            with cB:
-                if st.button("Cerrar", use_container_width=True):
-                    st.session_state.show_modal = False; st.rerun()
-    else:
-        html = (
-            '<div class="gt-overlay">'
-              '<div class="gt-modal">'
-                '<h3>¡Listo!</h3>'
-                '<p>Recibimos tu solicitud. En breve te llegará la cotización a ' + email_html + '.</p>'
-                '<p style="opacity:.7;">Podés cargar otra si querés.</p>'
-                '<div class="gt-actions">'
-                  '<div id="gt-reset" class="gt-btn">➕ Cargar otra cotización</div>'
-                  '<div id="gt-close" class="gt-btn">Cerrar</div>'
-                '</div>'
-              '</div>'
-            '</div>'
-            '<script>(function(){'
-              'function reload(){ window.location.reload(); }'
-              'document.getElementById("gt-reset").onclick = function(e){ e.preventDefault(); fetch(window.location.href,{cache:"reload"}).finally(reload); };'
-              'document.getElementById("gt-close").onclick  = function(e){ e.preventDefault(); reload(); };'
-            '})();</script>'
+    with st.modal("¡Listo!"):
+        st.markdown(
+            "Recibimos tu solicitud. En breve te llegará la cotización a " + email_html + ".",
+            unsafe_allow_html=True
         )
-        components.html(html, height=1, scrolling=False)
+        st.caption("Podés cargar otra si querés.")
+        cA, cB = st.columns(2)
+        with cA:
+            # Limpia el formulario
+            if st.button("➕ Cargar otra cotización", use_container_width=True):
+                reset_form()
+                st.rerun()
+        with cB:
+            # Sólo cierra, deja la info cargada
+            if st.button("Cerrar", use_container_width=True):
+                st.session_state.show_modal = False
+                st.rerun()

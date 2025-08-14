@@ -5,12 +5,11 @@ from datetime import datetime
 
 import numpy as np
 import streamlit as st
-import streamlit.components.v1 as components
 
 # -------------------- Config --------------------
 st.set_page_config(page_title="Cotizador GlobalTrip", page_icon="📦", layout="wide")
 
-# -------------------- Estilos mínimos (claro + #000033) --------------------
+# -------------------- Estilos (claro forzado + #000033) --------------------
 st.markdown("""
 <style>
 :root { color-scheme: light !important; }
@@ -25,15 +24,7 @@ div[data-testid="stMarkdownContainer"] * { color:#000033 !important; }
 .soft-card{ background:#fff; border:1.5px solid #dfe7ef; border-radius:16px;
   padding:18px 20px; box-shadow:0 8px 18px rgba(17,24,39,.07); }
 
-/* Popup */
-.gt-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:99999; display:flex; align-items:center; justify-content:center; }
-.gt-modal{ max-width:680px; width:92%; background:#fff; color:#000033; border:1.5px solid #dfe7ef; border-radius:18px; padding:28px 24px; box-shadow:0 18px 40px rgba(17,24,39,.25); }
-.gt-modal h3{ margin:0 0 8px 0; font-size:30px; font-weight:800; }
-.gt-modal p{ margin:10px 0; font-size:18px; }
-.gt-actions{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:16px; }
-.gt-btn{ display:inline-block; text-align:center; border:1.5px solid #dfe7ef; border-radius:16px; background:#eef5ff; color:#000033; padding:14px 16px; cursor:pointer; font-size:18px; }
-
-/* Botón enviar – sobrio y consistente */
+/* Botón enviar */
 #gt-submit-btn button{
   width:100% !important;
   background:#f3f5fb !important;
@@ -45,7 +36,20 @@ div[data-testid="stMarkdownContainer"] * { color:#000033 !important; }
 }
 #gt-submit-btn button:hover{ background:#eef3ff !important; }
 
-/* Caja de errores bajo el botón */
+/* Popup (sin iframe, sin JS) */
+.gt-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:99999;
+  display:flex; align-items:center; justify-content:center; }
+.gt-modal{ max-width:680px; width:92%; background:#fff; color:#000033;
+  border:1.5px solid #dfe7ef; border-radius:18px; padding:28px 24px;
+  box-shadow:0 18px 40px rgba(17,24,39,.25); }
+.gt-modal h3{ margin:0 0 8px 0; font-size:30px; font-weight:800; }
+.gt-modal p{ margin:10px 0; font-size:18px; }
+.gt-actions{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:16px; }
+.gt-btn{ display:inline-block; text-align:center; border:1.5px solid #dfe7ef;
+  border-radius:16px; background:#eef5ff; color:#000033; padding:14px 16px;
+  cursor:pointer; font-size:18px; text-decoration:none; }
+
+/* Errores debajo del botón */
 #gt-errors .stAlert{ margin-top:10px }
 </style>
 """, unsafe_allow_html=True)
@@ -81,7 +85,7 @@ def reset_form():
 
 init_state()
 
-# -------------------- QS helpers --------------------
+# -------------------- QS helpers (manejo ?gt=...) --------------------
 def get_qs():
     try: return dict(st.query_params)
     except: return {}
@@ -147,11 +151,11 @@ st.write("")
 st.subheader("Datos de contacto y del producto")
 c1,c2,c3,c4 = st.columns([1.1,1.1,1.0,0.9])
 with c1:
-    st.session_state.nombre = st.text_input("Nombre completo*", st.session_state.nombre, placeholder="Ej: Juan Pérez")
+    st.session_state.nombre = st.text_input("Nombre completo*", st.session_state.nombre, placeholder="Ej: Juan Pérez", key="name", help="autocomplete")
 with c2:
-    st.session_state.email = st.text_input("Correo electrónico*", st.session_state.email, placeholder="ejemplo@email.com")
+    st.session_state.email = st.text_input("Correo electrónico*", st.session_state.email, placeholder="ejemplo@email.com", key="email", help="autocomplete")
 with c3:
-    st.session_state.telefono = st.text_input("Teléfono*", st.session_state.telefono, placeholder="Ej: 11 5555 5555")
+    st.session_state.telefono = st.text_input("Teléfono*", st.session_state.telefono, placeholder="Ej: 11 5555 5555", key="tel", help="autocomplete")
 with c4:
     st.session_state.es_cliente = st.radio("¿Cliente/alumno de Global Trip?", ["No","Sí"],
                                            index=0 if st.session_state.es_cliente=="No" else 1, horizontal=True)
@@ -172,7 +176,7 @@ h[2].markdown("**Alto (cm)**")
 h[3].markdown("**Largo (cm)**")
 h[4].markdown(" ")
 
-# Filas ligeras
+# Filas
 for i, r in enumerate(st.session_state.rows):
     c = st.columns([0.9, 1,1,1, 0.8])
     r["cant"]  = c[0].number_input("", min_value=0, step=1, value=int(r["cant"]), key=f"cant_{i}", label_visibility="collapsed")
@@ -209,13 +213,11 @@ st.subheader("Valor de la mercadería")
 st.session_state.valor_mercaderia_raw = st.text_input("Valor de la mercadería (USD)", st.session_state.valor_mercaderia_raw)
 st.session_state.valor_mercaderia = to_float(st.session_state.valor_mercaderia_raw, 0.0)
 
-# -------------------- Submit + errores visibles abajo --------------------
+# Submit
 st.write("")
-submit_col = st.container()
-with submit_col:
-    st.markdown('<div id="gt-submit-btn">', unsafe_allow_html=True)
-    submit_clicked = st.button("📨 Solicitar cotización", use_container_width=True, key="gt_submit_btn")
-    st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('<div id="gt-submit-btn">', unsafe_allow_html=True)
+submit_clicked = st.button("📨 Solicitar cotización", use_container_width=True, key="gt_submit_btn")
+st.markdown('</div>', unsafe_allow_html=True)
 
 if submit_clicked:
     st.session_state.form_errors = validate()
@@ -242,46 +244,31 @@ if submit_clicked:
             },
             "valor_mercaderia_usd": st.session_state.valor_mercaderia
         }
+        # Envío best-effort si existiera webhook
         try: post_to_webhook(payload)
         except: pass
         st.session_state.show_dialog = True
 
-# Bloque de errores justo debajo del botón (si los hay)
+# Errores debajo del botón
 if st.session_state.form_errors:
     st.markdown('<div id="gt-errors">', unsafe_allow_html=True)
     st.error("Revisá estos puntos:\n\n" + "\n".join(st.session_state.form_errors))
     st.markdown('</div>', unsafe_allow_html=True)
-    components.html(
-        "<script>var e=document.getElementById('gt-errors');if(e){e.scrollIntoView({behavior:'smooth',block:'center'});}</script>",
-        height=0
-    )
 
-# -------------------- Popup --------------------
+# -------------------- Popup SIN iframe/JS --------------------
 if st.session_state.get("show_dialog", False):
     email = (st.session_state.email or "").strip()
     email_html = f"<a href='mailto:{email}'>{email}</a>" if email else "tu correo"
-
-    html = (
-        '<div class="gt-overlay" style="position:fixed; inset:0; z-index:999999;">'
-          '<div class="gt-modal">'
-            '<h3>¡Listo!</h3>'
-            '<p>Recibimos tu solicitud. En breve te llegará la cotización a ' + email_html + '.</p>'
-            '<p style="opacity:.75;">Podés cargar otra si querés.</p>'
-            '<div class="gt-actions">'
-              '<div id="gt-reset" class="gt-btn">➕ Cargar otra cotización</div>'
-              '<div id="gt-close" class="gt-btn">Cerrar</div>'
-            '</div>'
-          '</div>'
-        '</div>'
-        '<script>(function(){'
-          'function setParam(key,val){'
-            'var u=new URL(window.location.href);'
-            'if(val===null){u.searchParams.delete(key);}else{u.searchParams.set(key,val);}'
-            'window.location.replace(u.toString());'
-          '}'
-          'document.getElementById("gt-reset").onclick=function(e){e.preventDefault(); setParam("gt","reset");};'
-          'document.getElementById("gt-close").onclick=function(e){e.preventDefault(); setParam("gt","close");};'
-        '})();</script>'
-    )
-    # ⇣⇣⇣ EL CAMBIO IMPORTANTE ESTÁ ACÁ: subimos la altura del iframe
-    components.html(html, height=720, scrolling=False)
+    st.markdown(f"""
+<div class="gt-overlay">
+  <div class="gt-modal">
+    <h3>¡Listo!</h3>
+    <p>Recibimos tu solicitud. En breve te llegará la cotización a {email_html}.</p>
+    <p style="opacity:.75;">Podés cargar otra si querés.</p>
+    <div class="gt-actions">
+      <a class="gt-btn" href="?gt=reset" target="_self">➕ Cargar otra cotización</a>
+      <a class="gt-btn" href="?gt=close" target="_self">Cerrar</a>
+    </div>
+  </div>
+</div>
+""", unsafe_allow_html=True)

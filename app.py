@@ -249,7 +249,7 @@ def remove_last():
 st.markdown("""
 <div class="soft-card">
   <h2 style="margin:0;">📦 Cotización de Envío por Courier</h2>
-  <p style="margin:6px 0 0;">Completá tus datos y medidas. Te mandamos la cotización por email.</p>
+  <p style="margin:6px 0 0;">Ingresá tus datos y medidas para recibir la cotización por email.</p>
 </div>
 """, unsafe_allow_html=True)
 st.write("")
@@ -276,7 +276,7 @@ st.session_state.link = st.text_input("Link del producto o ficha técnica (Aliba
 
 st.write("")
 st.subheader("Bultos")
-st.caption("Cargá por bulto: **cantidad** y **dimensiones en cm**. Calculamos el **peso volumétrico**.")
+st.caption("Cargá por bulto: **cantidad** y **dimensiones en cm** así calculamos el **peso volumétrico**.")
 
 # Filas de bultos (labels sobre cada input)
 for i, r in enumerate(st.session_state.rows):
@@ -326,7 +326,7 @@ with m2:
       <span>Peso aplicable (kg) 🔒</span> <b>{peso_aplicable:,.2f}</b>
     </div>
     """, unsafe_allow_html=True)
-    st.caption(f"Se toma el mayor entre volumétrico ({total_peso_vol:,.2f}) y bruto ({st.session_state.peso_bruto:,.2f}).")
+    st.caption(f"Se toma el mayor entre peso volumétrico ({total_peso_vol:,.2f}) y peso bruto ({st.session_state.peso_bruto:,.2f}).")
 
 # Valor mercadería
 st.subheader("Valor de la mercadería")

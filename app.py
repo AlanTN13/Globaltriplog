@@ -12,46 +12,90 @@ st.set_page_config(page_title="Cotizador GlobalTrip", page_icon="📦", layout="
 # -------------------- Estilos (claro forzado + #000033) --------------------
 st.markdown("""
 <style>
+/* Fuerza modo claro en toda la app */
 :root { color-scheme: light !important; }
 html, body, .stApp, [data-testid="stAppViewContainer"],
 section.main, [data-testid="stHeader"], [data-testid="stSidebar"]{
   background:#FFFFFF !important; color:#000033 !important;
 }
+
+/* Texto siempre #000033 */
 div, p, span, label, h1,h2,h3,h4,h5,h6, a, small, strong, em, th, td,
 div[data-testid="stMarkdownContainer"] * { color:#000033 !important; }
 
 /* Card */
-.soft-card{ background:#fff; border:1.5px solid #dfe7ef; border-radius:16px;
-  padding:18px 20px; box-shadow:0 8px 18px rgba(17,24,39,.07); }
+.soft-card{
+  background:#fff; border:1.5px solid #dfe7ef; border-radius:16px;
+  padding:18px 20px; box-shadow:0 8px 18px rgba(17,24,39,.07);
+}
+
+/* Inputs base (desktop & mobile) */
+div[data-testid="stTextInput"] input,
+div[data-testid="stTextArea"] textarea {
+  background:#fff !important; color:#000033 !important;
+  border:1.5px solid #dfe7ef !important; border-radius:16px !important;
+  padding:14px 16px !important; box-shadow:none !important;
+}
+div[data-testid="stTextInput"] input::placeholder,
+div[data-testid="stTextArea"] textarea::placeholder { color:#00003399 !important; }
+
+/* ---- NumberInput: caja + stepper (claro) ---- */
+div[data-testid="stNumberInput"] > div{
+  background:#fff !important; border:1.5px solid #dfe7ef !important;
+  border-radius:16px !important; box-shadow:none !important;
+}
+div[data-testid="stNumberInput"] input{
+  background:#fff !important; color:#000033 !important;
+  padding:14px 16px !important; height:48px !important;
+}
+/* Sufijo con + / - */
+div[data-testid="stNumberInput"] > div > div:nth-child(2){
+  background:#fff !important; border-left:1.5px solid #dfe7ef !important;
+  border-radius:0 16px 16px 0 !important;
+}
+/* Botoncitos + / - */
+div[data-testid="stNumberInput"] button{
+  background:#eef3ff !important; color:#000033 !important;
+  border:1px solid #dfe7ef !important; border-radius:10px !important;
+}
+
+/* iOS / Safari: evita “auto-dark” y autofill gris */
+input, textarea, select{
+  -webkit-text-fill-color:#000033 !important;
+  background:#fff !important; color:#000033 !important; caret-color:#000033 !important;
+}
+input:-webkit-autofill{
+  -webkit-box-shadow:0 0 0 1000px #fff inset !important;
+  -webkit-text-fill-color:#000033 !important;
+}
 
 /* Botón enviar */
 #gt-submit-btn button{
-  width:100% !important;
-  background:#f3f5fb !important;
-  color:#000033 !important;
-  border:2px solid #000033 !important;
-  border-radius:16px !important;
-  padding:14px 18px !important;
+  width:100% !important; background:#f3f5fb !important; color:#000033 !important;
+  border:2px solid #000033 !important; border-radius:16px !important; padding:14px 18px !important;
   box-shadow:0 4px 10px rgba(0,16,64,.08) !important;
 }
 #gt-submit-btn button:hover{ background:#eef3ff !important; }
 
-/* Popup (sin iframe, sin JS) */
+/* Popup (sin iframe/JS) */
 .gt-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:99999;
   display:flex; align-items:center; justify-content:center; }
 .gt-modal{ max-width:680px; width:92%; background:#fff; color:#000033;
   border:1.5px solid #dfe7ef; border-radius:18px; padding:28px 24px;
   box-shadow:0 18px 40px rgba(17,24,39,.25); }
 .gt-modal h3{ margin:0 0 8px 0; font-size:30px; font-weight:800; }
-.gt-modal p{ margin:10px 0; font-size:18px; }
 .gt-actions{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:16px; }
 .gt-btn{ display:inline-block; text-align:center; border:1.5px solid #dfe7ef;
   border-radius:16px; background:#eef5ff; color:#000033; padding:14px 16px;
   cursor:pointer; font-size:18px; text-decoration:none; }
 
-/* Errores debajo del botón */
-#gt-errors .stAlert{ margin-top:10px }
+/* Mobile tweaks */
+@media (max-width: 640px){
+  .soft-card{ padding:16px; }
+  div[data-testid="stNumberInput"] input{ font-size:18px !important; }
+}
 </style>
+
 """, unsafe_allow_html=True)
 
 # -------------------- Constantes --------------------

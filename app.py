@@ -11,35 +11,19 @@ st.set_page_config(page_title="Cotizador GlobalTrip", page_icon="📦", layout="
 
 # -------------------- Estilos (claro forzado + #000033) --------------------
 st.markdown("""
+
 <style>
-/* Fuerza modo claro en toda la app */
-:root { color-scheme: light !important; }
-html, body, .stApp, [data-testid="stAppViewContainer"],
-section.main, [data-testid="stHeader"], [data-testid="stSidebar"]{
-  background:#FFFFFF !important; color:#000033 !important;
-}
-
-/* Texto siempre #000033 */
-div, p, span, label, h1,h2,h3,h4,h5,h6, a, small, strong, em, th, td,
-div[data-testid="stMarkdownContainer"] * { color:#000033 !important; }
-
-/* Card */
-.soft-card{
-  background:#fff; border:1.5px solid #dfe7ef; border-radius:16px;
-  padding:18px 20px; box-shadow:0 8px 18px rgba(17,24,39,.07);
-}
-
-/* Inputs base (desktop & mobile) */
+/* —— Inputs (texto y textarea) —— */
 div[data-testid="stTextInput"] input,
-div[data-testid="stTextArea"] textarea {
+div[data-testid="stTextArea"] textarea{
   background:#fff !important; color:#000033 !important;
   border:1.5px solid #dfe7ef !important; border-radius:16px !important;
   padding:14px 16px !important; box-shadow:none !important;
 }
 div[data-testid="stTextInput"] input::placeholder,
-div[data-testid="stTextArea"] textarea::placeholder { color:#00003399 !important; }
+div[data-testid="stTextArea"] textarea::placeholder{ color:#00003399 !important; }
 
-/* ---- NumberInput: caja + stepper (claro) ---- */
+/* —— NumberInput: caja y stepper (blanco) —— */
 div[data-testid="stNumberInput"] > div{
   background:#fff !important; border:1.5px solid #dfe7ef !important;
   border-radius:16px !important; box-shadow:none !important;
@@ -48,28 +32,24 @@ div[data-testid="stNumberInput"] input{
   background:#fff !important; color:#000033 !important;
   padding:14px 16px !important; height:48px !important;
 }
-/* Sufijo con + / - */
-div[data-testid="stNumberInput"] > div > div:nth-child(2){
+div[data-testid="stNumberInput"] > div > div:nth-child(2){ /* panel de + / - */
   background:#fff !important; border-left:1.5px solid #dfe7ef !important;
   border-radius:0 16px 16px 0 !important;
 }
-/* Botoncitos + / - */
-div[data-testid="stNumberInput"] button{
-  background:#eef3ff !important; color:#000033 !important;
+div[data-testid="stNumberInput"] button{  /* los dos botoncitos + y - */
+  background:#eef5ff !important; color:#000033 !important;
   border:1px solid #dfe7ef !important; border-radius:10px !important;
 }
 
-/* iOS / Safari: evita “auto-dark” y autofill gris */
-input, textarea, select{
-  -webkit-text-fill-color:#000033 !important;
-  background:#fff !important; color:#000033 !important; caret-color:#000033 !important;
+/* —— TODOS los botones por defecto (Agregar, Vaciar, Eliminar, etc.) —— */
+div.stButton > button{
+  background:#fff !important; color:#000033 !important;
+  border:1.5px solid #dfe7ef !important; border-radius:16px !important;
+  box-shadow:none !important; padding:10px 14px !important;
 }
-input:-webkit-autofill{
-  -webkit-box-shadow:0 0 0 1000px #fff inset !important;
-  -webkit-text-fill-color:#000033 !important;
-}
+div.stButton > button:hover{ background:#f7f9ff !important; }
 
-/* Botón enviar */
+/* El botón grande de “Solicitar cotización” lo seguimos estilando con #gt-submit-btn */
 #gt-submit-btn button{
   width:100% !important; background:#f3f5fb !important; color:#000033 !important;
   border:2px solid #000033 !important; border-radius:16px !important; padding:14px 18px !important;
@@ -77,22 +57,13 @@ input:-webkit-autofill{
 }
 #gt-submit-btn button:hover{ background:#eef3ff !important; }
 
-/* Popup (sin iframe/JS) */
-.gt-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:99999;
-  display:flex; align-items:center; justify-content:center; }
-.gt-modal{ max-width:680px; width:92%; background:#fff; color:#000033;
-  border:1.5px solid #dfe7ef; border-radius:18px; padding:28px 24px;
-  box-shadow:0 18px 40px rgba(17,24,39,.25); }
-.gt-modal h3{ margin:0 0 8px 0; font-size:30px; font-weight:800; }
-.gt-actions{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:16px; }
-.gt-btn{ display:inline-block; text-align:center; border:1.5px solid #dfe7ef;
-  border-radius:16px; background:#eef5ff; color:#000033; padding:14px 16px;
-  cursor:pointer; font-size:18px; text-decoration:none; }
-
-/* Mobile tweaks */
-@media (max-width: 640px){
-  .soft-card{ padding:16px; }
-  div[data-testid="stNumberInput"] input{ font-size:18px !important; }
+/* iOS: evitar auto-dark/autofill gris */
+input, textarea, select{
+  -webkit-text-fill-color:#000033 !important; background:#fff !important; caret-color:#000033 !important;
+}
+input:-webkit-autofill{
+  -webkit-box-shadow:0 0 0 1000px #fff inset !important;
+  -webkit-text-fill-color:#000033 !important;
 }
 </style>
 

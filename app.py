@@ -19,7 +19,7 @@ section.main, [data-testid="stHeader"], [data-testid="stSidebar"]{
   background:#FFFFFF !important; color:#000033 !important;
 }
 
-/* Texto siempre #000033 */
+/* Texto #000033 */
 div, p, span, label, h1,h2,h3,h4,h5,h6, a, small, strong, em, th, td,
 div[data-testid="stMarkdownContainer"] * { color:#000033 !important; }
 
@@ -29,7 +29,7 @@ div[data-testid="stMarkdownContainer"] * { color:#000033 !important; }
   padding:18px 20px; box-shadow:0 8px 18px rgba(17,24,39,.07);
 }
 
-/* Inputs base (desktop & mobile) */
+/* Inputs base */
 div[data-testid="stTextInput"] input,
 div[data-testid="stTextArea"] textarea {
   background:#fff !important; color:#000033 !important;
@@ -39,7 +39,7 @@ div[data-testid="stTextArea"] textarea {
 div[data-testid="stTextInput"] input::placeholder,
 div[data-testid="stTextArea"] textarea::placeholder { color:#00003399 !important; }
 
-/* ---- NumberInput: caja + stepper (claro) ---- */
+/* NumberInput (caja + stepper claros) */
 div[data-testid="stNumberInput"] > div{
   background:#fff !important; border:1.5px solid #dfe7ef !important;
   border-radius:16px !important; box-shadow:none !important;
@@ -48,18 +48,16 @@ div[data-testid="stNumberInput"] input{
   background:#fff !important; color:#000033 !important;
   padding:14px 16px !important; height:48px !important;
 }
-/* Sufijo con + / - */
 div[data-testid="stNumberInput"] > div > div:nth-child(2){
   background:#fff !important; border-left:1.5px solid #dfe7ef !important;
   border-radius:0 16px 16px 0 !important;
 }
-/* Botoncitos + / - */
 div[data-testid="stNumberInput"] button{
   background:#eef3ff !important; color:#000033 !important;
   border:1px solid #dfe7ef !important; border-radius:10px !important;
 }
 
-/* iOS / Safari: evita “auto-dark” y autofill gris */
+/* iOS / Safari */
 input, textarea, select{
   -webkit-text-fill-color:#000033 !important;
   background:#fff !important; color:#000033 !important; caret-color:#000033 !important;
@@ -69,32 +67,24 @@ input:-webkit-autofill{
   -webkit-text-fill-color:#000033 !important;
 }
 
-/* Botón enviar */
-#gt-submit-btn button{
-  width:100% !important; background:#f3f5fb !important; color:#000033 !important;
-  border:2px solid #000033 !important; border-radius:16px !important; padding:14px 18px !important;
-  box-shadow:0 4px 10px rgba(0,16,64,.08) !important;
+/* Botones (todos en blanco) */
+div.stButton > button{
+  width:100%; background:#ffffff !important; color:#000033 !important;
+  border:1.5px solid #dfe7ef !important; border-radius:16px !important;
+  padding:14px 18px !important; box-shadow:0 6px 16px rgba(17,24,39,.06) !important;
 }
-#gt-submit-btn button:hover{ background:#eef3ff !important; }
+div.stButton > button:hover{ background:#f6f9ff !important; }
 
-/* Pill para "Peso aplicable" (más discreto) */
+/* Botón enviar (mismo estilo blanco) */
+#gt-submit-btn button{ width:100% !important; }
+
+/* Pill de Peso aplicable */
 .gt-pill{
-  display:inline-flex; align-items:center; gap:10px;
-  padding:10px 14px; border:1.5px solid #dfe7ef; background:#fff;
-  border-radius:12px; box-shadow:0 6px 16px rgba(17,24,39,.06);
+  display:inline-flex; align-items:center; gap:.75rem;
+  background:#fff; border:1.5px solid #dfe7ef; border-radius:14px;
+  padding:10px 14px; box-shadow:0 6px 16px rgba(17,24,39,.06);
 }
-.gt-pill .lbl{ font-size:14px; opacity:.7; }
-.gt-pill .val{ font-weight:800; font-size:18px; }
-
-/* Botones blancos Alinear en una fila (Agregar/Vaciar) */
-.gt-actions-row{
-  display:flex; gap:16px; align-items:center; justify-content:space-between;
-}
-.gt-btn-white{
-  width:100%; text-align:center; padding:16px; border:1.5px solid #dfe7ef;
-  background:#fff; border-radius:16px; box-shadow:0 8px 18px rgba(17,24,39,.07);
-  text-decoration:none; color:#000033; display:block;
-}
+.gt-pill b{ font-size:18px; }
 
 /* Popup (sin iframe/JS) */
 .gt-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:99999;
@@ -108,19 +98,25 @@ input:-webkit-autofill{
   border-radius:16px; background:#eef5ff; color:#000033; padding:14px 16px;
   cursor:pointer; font-size:18px; text-decoration:none; }
 
+/* Acciones de bultos: una fila en desktop, apiladas en mobile */
+@media (min-width: 900px){
+  .gt-bultos-actions{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+}
+@media (max-width: 899px){
+  .gt-bultos-actions{ display:grid; grid-template-columns:1fr; gap:12px; }
+}
+
 /* Mobile tweaks */
 @media (max-width: 640px){
   .soft-card{ padding:16px; }
   div[data-testid="stNumberInput"] input{ font-size:18px !important; }
-  .gt-actions-row{ flex-direction:column; }
 }
 </style>
 """, unsafe_allow_html=True)
 
-# -------------------- Constantes --------------------
+# -------------------- Constantes/estado --------------------
 FACTOR_VOL = 5000
 
-# -------------------- Estado --------------------
 def init_state():
     st.session_state.setdefault("rows", [{"cant":0, "ancho":0, "alto":0, "largo":0}])
     st.session_state.setdefault("nombre","")
@@ -135,17 +131,6 @@ def init_state():
     st.session_state.setdefault("valor_mercaderia",0.0)
     st.session_state.setdefault("show_dialog", False)
     st.session_state.setdefault("form_errors", [])
-
-def reset_form():
-    st.session_state.update({
-        "rows":[{"cant":0, "ancho":0, "alto":0, "largo":0}],
-        "nombre":"", "email":"", "telefono":"", "es_cliente":"No",
-        "descripcion":"", "link":"",
-        "peso_bruto_raw":"0.00", "peso_bruto":0.0,
-        "valor_mercaderia_raw":"0.00", "valor_mercaderia":0.0,
-        "show_dialog": False, "form_errors":[]
-    })
-
 init_state()
 
 # -------------------- QS helpers (manejo ?gt=...) --------------------
@@ -163,7 +148,15 @@ def rerun():
 
 _qs = get_qs()
 if _qs.get("gt","") == "reset":
-    reset_form(); set_qs(); rerun()
+    st.session_state.update({
+        "rows":[{"cant":0, "ancho":0, "alto":0, "largo":0}],
+        "nombre":"", "email":"", "telefono":"", "es_cliente":"No",
+        "descripcion":"", "link":"",
+        "peso_bruto_raw":"0.00", "peso_bruto":0.0,
+        "valor_mercaderia_raw":"0.00", "valor_mercaderia":0.0,
+        "show_dialog": False, "form_errors":[]
+    })
+    set_qs(); rerun()
 elif _qs.get("gt","") == "close":
     st.session_state.show_dialog = False; set_qs(); rerun()
 
@@ -215,100 +208,88 @@ st.subheader("Datos de contacto y del producto")
 c1,c2,c3,c4 = st.columns([1.1,1.1,1.0,0.9])
 with c1:
     st.session_state.nombre = st.text_input("Nombre completo*", value=st.session_state.nombre,
-                                 placeholder="Ej: Juan Pérez", key="nombre_input")
+                                            placeholder="Ej: Juan Pérez")
 with c2:
     st.session_state.email = st.text_input("Correo electrónico*", value=st.session_state.email,
-                                placeholder="ejemplo@email.com", key="email_input")
+                                           placeholder="ejemplo@email.com")
 with c3:
     st.session_state.telefono = st.text_input("Teléfono*", value=st.session_state.telefono,
-                              placeholder="Ej: 11 5555 5555", key="tel_input")
+                                              placeholder="Ej: 11 5555 5555")
 with c4:
     st.session_state.es_cliente = st.radio("¿Cliente/alumno de Global Trip?", ["No","Sí"],
                                            index=0 if st.session_state.es_cliente=="No" else 1, horizontal=True)
 
 st.session_state.descripcion = st.text_area("Descripción del producto*", value=st.session_state.descripcion,
-                                            placeholder='Ej: "Máquina selladora de bolsas"', key="desc_input")
+                                            placeholder='Ej: "Máquina selladora de bolsas"')
 st.session_state.link = st.text_input("Link del producto o ficha técnica (Alibaba, Amazon, etc.)*",
-                                      value=st.session_state.link, placeholder="https://...", key="link_input")
+                                      value=st.session_state.link, placeholder="https://...")
 
 st.write("")
-# --------- BULTOS (labels sobre cada input, responsive) ---------
 st.subheader("Bultos")
 st.caption("Cargá por bulto: **cantidad** y **dimensiones en cm**. Calculamos el **peso volumétrico**.")
 
-# Filas de bultos (cada campo con su label)
+# Filas de bultos (labels sobre cada input)
 for i, r in enumerate(st.session_state.rows):
-    cols = st.columns([0.9, 1, 1, 1, 0.8])
-
+    cols = st.columns([0.9, 1, 1, 1])
     with cols[0]:
-        st.session_state.rows[i]["cant"] = st.number_input(
-            "Cantidad", min_value=0, step=1, value=int(r["cant"]), key=f"cant_{i}"
-        )
+        st.session_state.rows[i]["cant"] = st.number_input("Cantidad", min_value=0, step=1,
+                                                           value=int(r["cant"]), key=f"cant_{i}")
     with cols[1]:
-        st.session_state.rows[i]["ancho"] = st.number_input(
-            "Ancho (cm)", min_value=0.0, step=1.0, value=float(r["ancho"]), key=f"an_{i}"
-        )
+        st.session_state.rows[i]["ancho"] = st.number_input("Ancho (cm)", min_value=0.0, step=1.0,
+                                                            value=float(r["ancho"]), key=f"an_{i}")
     with cols[2]:
-        st.session_state.rows[i]["alto"] = st.number_input(
-            "Alto (cm)", min_value=0.0, step=1.0, value=float(r["alto"]), key=f"al_{i}"
-        )
+        st.session_state.rows[i]["alto"] = st.number_input("Alto (cm)", min_value=0.0, step=1.0,
+                                                           value=float(r["alto"]), key=f"al_{i}")
     with cols[3]:
-        st.session_state.rows[i]["largo"] = st.number_input(
-            "Largo (cm)", min_value=0.0, step=1.0, value=float(r["largo"]), key=f"lar_{i}"
-        )
-    with cols[4]:
-        if st.button("🗑️ Eliminar", key=f"del_{i}"):
-            st.session_state.rows.pop(i)
-            st.stop()
+        st.session_state.rows[i]["largo"] = st.number_input("Largo (cm)", min_value=0.0, step=1.0,
+                                                            value=float(r["largo"]), key=f"lar_{i}")
 
-# Acciones en una sola fila y con fondo blanco
-a1, a2 = st.columns([1,1])
-with a1:
-    st.markdown('<a class="gt-btn-white" href="?gt=add" target="_self">➕ Agregar bulto</a>', unsafe_allow_html=True)
-with a2:
-    st.markdown('<a class="gt-btn-white" href="?gt=clear" target="_self">🧹 Vaciar tabla</a>', unsafe_allow_html=True)
+# Acciones (desktop en fila; mobile apiladas). Fondo blanco por CSS global.
+st.markdown('<div class="gt-bultos-actions">', unsafe_allow_html=True)
+cA, cB, cC = st.columns(3)
+with cA:
+    if st.button("➕ Agregar bulto", use_container_width=True):
+        st.session_state.rows.append({"cant": 0, "ancho": 0, "alto": 0, "largo": 0})
+with cB:
+    if st.button("🧹 Vaciar tabla", use_container_width=True):
+        st.session_state.rows = [{"cant": 0, "ancho": 0, "alto": 0, "largo": 0}]
+with cC:
+    disable_del = len(st.session_state.rows) <= 1
+    if st.button("🗑️ Eliminar último", use_container_width=True, disabled=disable_del):
+        if not disable_del:
+            st.session_state.rows.pop()
+st.markdown('</div>', unsafe_allow_html=True)
 
-# Manejo rápido de esas acciones vía QS
-_qs2 = get_qs()
-if _qs2.get("gt") == "add":
-    st.session_state.rows.append({"cant": 0, "ancho": 0, "alto": 0, "largo": 0})
-    set_qs(); rerun()
-elif _qs2.get("gt") == "clear":
-    st.session_state.rows = [{"cant": 0, "ancho": 0, "alto": 0, "largo": 0}]
-    set_qs(); rerun()
-
-# --------- PESOS (unificado) ---------
+# Pesos (unificamos en un solo dato: Peso aplicable)
 st.write("")
 st.subheader("Pesos")
-
-total_peso_vol = compute_total_vol(st.session_state.rows)
-
-pc1, pc2 = st.columns([1.4, 1.0])
-with pc1:
-    # Igual que "Valor de la mercadería": text_input ancho, sin "Enter para aplicar"
+m1, m2 = st.columns([1.2, 1.0])
+with m1:
     st.session_state.peso_bruto_raw = st.text_input(
         "Peso bruto (kg)", value=st.session_state.peso_bruto_raw,
-        help="Usá punto o coma para decimales (ej: 1.25)", key="pb_input"
+        help="Usá punto o coma para decimales (ej: 1.25)"
     )
     st.session_state.peso_bruto = to_float(st.session_state.peso_bruto_raw, 0.0)
 
-with pc2:
-    peso_aplicable = max(total_peso_vol, st.session_state.peso_bruto)
-    st.markdown(
-        f'<div class="gt-pill"><span class="lbl">Peso aplicable (kg) 🔒</span>'
-        f'<span class="val">{peso_aplicable:,.2f}</span></div>',
-        unsafe_allow_html=True
-    )
+total_peso_vol = compute_total_vol(st.session_state.rows)
+peso_aplicable = max(total_peso_vol, st.session_state.peso_bruto)
+
+with m2:
+    st.markdown(f"""
+    <div class="gt-pill">
+      <span>Peso aplicable (kg) 🔒</span> <b>{peso_aplicable:,.2f}</b>
+    </div>
+    """, unsafe_allow_html=True)
     st.caption(f"Se toma el mayor entre volumétrico ({total_peso_vol:,.2f}) y bruto ({st.session_state.peso_bruto:,.2f}).")
 
-# --------- VALOR MERCADERÍA ---------
+# Valor mercadería
 st.subheader("Valor de la mercadería")
 st.session_state.valor_mercaderia_raw = st.text_input(
-    "Valor de la mercadería (USD)", value=st.session_state.valor_mercaderia_raw, key="vm_input"
+    "Valor de la mercadería (USD)", value=st.session_state.valor_mercaderia_raw
 )
 st.session_state.valor_mercaderia = to_float(st.session_state.valor_mercaderia_raw, 0.0)
 
-# --------- SUBMIT ---------
+# Submit (blanco, borde suave)
 st.write("")
 st.markdown('<div id="gt-submit-btn">', unsafe_allow_html=True)
 submit_clicked = st.button("📨 Solicitar cotización", use_container_width=True, key="gt_submit_btn")
@@ -343,11 +324,11 @@ if submit_clicked:
         except: pass
         st.session_state.show_dialog = True
 
-# Errores debajo del botón
+# Errores
 if st.session_state.form_errors:
     st.error("Revisá estos puntos:\n\n" + "\n".join(st.session_state.form_errors))
 
-# --------- Popup SIN iframe/JS ---------
+# Popup post-submit sin iframe/JS
 if st.session_state.get("show_dialog", False):
     email = (st.session_state.email or "").strip()
     email_html = f"<a href='mailto:{email}'>{email}</a>" if email else "tu correo"

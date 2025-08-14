@@ -216,33 +216,42 @@ st.session_state.link = st.text_input("Link del producto o ficha técnica (Aliba
                                       value=st.session_state.link, placeholder="https://...", key="link_input")
 
 st.write("")
+# --------- BULTOS (labels sobre cada input, responsive) ---------
 st.subheader("Bultos")
 st.caption("Cargá por bulto: **cantidad** y **dimensiones en cm**. Calculamos el **peso volumétrico**.")
 
-# Encabezado
-h = st.columns([0.9, 1,1,1, 0.8])
-h[0].markdown("**Cantidad**")
-h[1].markdown("**Ancho (cm)**")
-h[2].markdown("**Alto (cm)**")
-h[3].markdown("**Largo (cm)**")
-h[4].markdown(" ")
-
-# Filas
+# Filas de bultos (cada campo con su label)
 for i, r in enumerate(st.session_state.rows):
-    c = st.columns([0.9, 1,1,1, 0.8])
-    r["cant"]  = c[0].number_input("", min_value=0, step=1, value=int(r["cant"]), key=f"cant_{i}", label_visibility="collapsed")
-    r["ancho"] = c[1].number_input("", min_value=0.0, step=1.0, value=float(r["ancho"]), key=f"an_{i}", label_visibility="collapsed")
-    r["alto"]  = c[2].number_input("", min_value=0.0, step=1.0, value=float(r["alto"]), key=f"al_{i}", label_visibility="collapsed")
-    r["largo"] = c[3].number_input("", min_value=0.0, step=1.0, value=float(r["largo"]), key=f"lar_{i}", label_visibility="collapsed")
-    if c[4].button("🗑️ Eliminar", key=f"del_{i}"):
-        st.session_state.rows.pop(i)
-        st.stop()
+    cols = st.columns([0.9, 1, 1, 1, 0.8])
 
-cc1, cc2 = st.columns([1,1])
-if cc1.button("➕ Agregar bulto", use_container_width=False):
-    st.session_state.rows.append({"cant":0,"ancho":0,"alto":0,"largo":0})
-if cc2.button("🧹 Vaciar tabla", use_container_width=False):
-    st.session_state.rows = [{"cant":0,"ancho":0,"alto":0,"largo":0}]
+    with cols[0]:
+        st.session_state.rows[i]["cant"] = st.number_input(
+            "Cantidad", min_value=0, step=1, value=int(r["cant"]), key=f"cant_{i}"
+        )
+    with cols[1]:
+        st.session_state.rows[i]["ancho"] = st.number_input(
+            "Ancho (cm)", min_value=0.0, step=1.0, value=float(r["ancho"]), key=f"an_{i}"
+        )
+    with cols[2]:
+        st.session_state.rows[i]["alto"] = st.number_input(
+            "Alto (cm)", min_value=0.0, step=1.0, value=float(r["alto"]), key=f"al_{i}"
+        )
+    with cols[3]:
+        st.session_state.rows[i]["largo"] = st.number_input(
+            "Largo (cm)", min_value=0.0, step=1.0, value=float(r["largo"]), key=f"lar_{i}"
+        )
+    with cols[4]:
+        if st.button("🗑️ Eliminar", key=f"del_{i}"):
+            st.session_state.rows.pop(i)
+            st.stop()
+
+cc1, cc2 = st.columns([1, 1])
+with cc1:
+    if st.button("➕ Agregar bulto"):
+        st.session_state.rows.append({"cant": 0, "ancho": 0, "alto": 0, "largo": 0})
+with cc2:
+    if st.button("🧹 Vaciar tabla"):
+        st.session_state.rows = [{"cant": 0, "ancho": 0, "alto": 0, "largo": 0}]
 
 # Pesos
 st.write("")

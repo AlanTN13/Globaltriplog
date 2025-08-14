@@ -260,8 +260,9 @@ if st.session_state.form_errors:
 if st.session_state.get("show_dialog", False):
     email = (st.session_state.email or "").strip()
     email_html = f"<a href='mailto:{email}'>{email}</a>" if email else "tu correo"
+
     html = (
-        '<div class="gt-overlay">'
+        '<div class="gt-overlay" style="position:fixed; inset:0; z-index:999999;">'
           '<div class="gt-modal">'
             '<h3>¡Listo!</h3>'
             '<p>Recibimos tu solicitud. En breve te llegará la cotización a ' + email_html + '.</p>'
@@ -282,4 +283,5 @@ if st.session_state.get("show_dialog", False):
           'document.getElementById("gt-close").onclick=function(e){e.preventDefault(); setParam("gt","close");};'
         '})();</script>'
     )
-    components.html(html, height=1, scrolling=False)
+    # ⇣⇣⇣ EL CAMBIO IMPORTANTE ESTÁ ACÁ: subimos la altura del iframe
+    components.html(html, height=720, scrolling=False)

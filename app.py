@@ -249,7 +249,7 @@ def remove_last():
 st.markdown("""
 <div class="soft-card">
   <h2 style="margin:0;">📦 Cotización de Envío por Courier</h2>
-  <p style="margin:6px 0 0;">Ingresá tus datos y medidas para recibir la cotización por email.</p>
+  <p style="margin:6px 0 0;">Completá tus datos, el producto y sus medidas, y te enviamos la cotización por mail.</p>
 </div>
 """, unsafe_allow_html=True)
 st.write("")

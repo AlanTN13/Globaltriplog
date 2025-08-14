@@ -4,7 +4,6 @@ import os, json, requests
 from datetime import datetime
 
 import numpy as np
-import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
@@ -21,8 +20,11 @@ section.main, [data-testid="stHeader"], [data-testid="stSidebar"]{
 }
 div, p, span, label, h1,h2,h3,h4,h5,h6, a, small, strong, em, th, td,
 div[data-testid="stMarkdownContainer"] * { color:#000033 !important; }
+
+/* Card */
 .soft-card{ background:#fff; border:1.5px solid #dfe7ef; border-radius:16px;
   padding:18px 20px; box-shadow:0 8px 18px rgba(17,24,39,.07); }
+
 /* Popup */
 .gt-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:99999; display:flex; align-items:center; justify-content:center; }
 .gt-modal{ max-width:680px; width:92%; background:#fff; color:#000033; border:1.5px solid #dfe7ef; border-radius:18px; padding:28px 24px; box-shadow:0 18px 40px rgba(17,24,39,.25); }
@@ -30,6 +32,21 @@ div[data-testid="stMarkdownContainer"] * { color:#000033 !important; }
 .gt-modal p{ margin:10px 0; font-size:18px; }
 .gt-actions{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:16px; }
 .gt-btn{ display:inline-block; text-align:center; border:1.5px solid #dfe7ef; border-radius:16px; background:#eef5ff; color:#000033; padding:14px 16px; cursor:pointer; font-size:18px; }
+
+/* Botón enviar – sobrio y consistente */
+#gt-submit-btn button{
+  width:100% !important;
+  background:#f3f5fb !important;
+  color:#000033 !important;
+  border:2px solid #000033 !important;
+  border-radius:16px !important;
+  padding:14px 18px !important;
+  box-shadow:0 4px 10px rgba(0,16,64,.08) !important;
+}
+#gt-submit-btn button:hover{ background:#eef3ff !important; }
+
+/* Caja de errores bajo el botón */
+#gt-errors .stAlert{ margin-top:10px }
 </style>
 """, unsafe_allow_html=True)
 
@@ -38,9 +55,7 @@ FACTOR_VOL = 5000
 
 # -------------------- Estado --------------------
 def init_state():
-    st.session_state.setdefault("rows", [
-        {"cant":0, "ancho":0, "alto":0, "largo":0}
-    ])
+    st.session_state.setdefault("rows", [{"cant":0, "ancho":0, "alto":0, "largo":0}])
     st.session_state.setdefault("nombre","")
     st.session_state.setdefault("email","")
     st.session_state.setdefault("telefono","")
@@ -52,6 +67,7 @@ def init_state():
     st.session_state.setdefault("valor_mercaderia_raw","0.00")
     st.session_state.setdefault("valor_mercaderia",0.0)
     st.session_state.setdefault("show_dialog", False)
+    st.session_state.setdefault("form_errors", [])
 
 def reset_form():
     st.session_state.update({
@@ -60,22 +76,20 @@ def reset_form():
         "descripcion":"", "link":"",
         "peso_bruto_raw":"0.00", "peso_bruto":0.0,
         "valor_mercaderia_raw":"0.00", "valor_mercaderia":0.0,
-        "show_dialog": False
+        "show_dialog": False, "form_errors":[]
     })
 
 init_state()
 
-# -------------------- QS helpers seguros --------------------
+# -------------------- QS helpers --------------------
 def get_qs():
     try: return dict(st.query_params)
     except: return {}
-
 def set_qs(**kwargs):
     try:
         st.query_params.clear()
         for k,v in kwargs.items(): st.query_params[k] = v
     except: pass
-
 def rerun():
     try: st.rerun()
     except: st.experimental_rerun()
@@ -87,7 +101,7 @@ elif _qs.get("gt","") == "close":
     st.session_state.show_dialog = False; set_qs(); rerun()
 
 # -------------------- Helpers --------------------
-def to_float(s:str, default=0.0) -> float:
+def to_float(s, default=0.0):
     try: return float(str(s).replace(",",".")) if s not in (None,"") else default
     except: return default
 
@@ -109,6 +123,18 @@ def post_to_webhook(payload: dict):
     except Exception as e:
         return False, str(e)
 
+def validate():
+    errs = []
+    if not st.session_state.nombre.strip(): errs.append("• Nombre es obligatorio.")
+    if not st.session_state.email.strip() or "@" not in st.session_state.email: errs.append("• Email válido es obligatorio.")
+    if not st.session_state.telefono.strip(): errs.append("• Teléfono es obligatorio.")
+    if not st.session_state.descripcion.strip(): errs.append("• Descripción del producto es obligatoria.")
+    if not st.session_state.link.strip(): errs.append("• Link del producto/ficha técnica es obligatorio.")
+    hay_medidas = any(to_float(r["cant"])>0 and (to_float(r["ancho"])+to_float(r["alto"])+to_float(r["largo"]))>0
+                      for r in st.session_state.rows)
+    if not hay_medidas: errs.append("• Ingresá al menos un bulto con **cantidad** y **medidas**.")
+    return errs
+
 # -------------------- UI --------------------
 st.markdown("""
 <div class="soft-card">
@@ -129,7 +155,6 @@ with c3:
 with c4:
     st.session_state.es_cliente = st.radio("¿Cliente/alumno de Global Trip?", ["No","Sí"],
                                            index=0 if st.session_state.es_cliente=="No" else 1, horizontal=True)
-
 st.session_state.descripcion = st.text_area("Descripción del producto*", st.session_state.descripcion,
                                             placeholder='Ej: "Máquina selladora de bolsas"')
 st.session_state.link = st.text_input("Link del producto o ficha técnica (Alibaba, Amazon, etc.)*",
@@ -139,7 +164,7 @@ st.write("")
 st.subheader("Bultos")
 st.caption("Cargá por bulto: **cantidad** y **dimensiones en cm**. Calculamos el **peso volumétrico**.")
 
-# Header de tabla
+# Encabezado
 h = st.columns([0.9, 1,1,1, 0.8])
 h[0].markdown("**Cantidad**")
 h[1].markdown("**Ancho (cm)**")
@@ -184,23 +209,17 @@ st.subheader("Valor de la mercadería")
 st.session_state.valor_mercaderia_raw = st.text_input("Valor de la mercadería (USD)", st.session_state.valor_mercaderia_raw)
 st.session_state.valor_mercaderia = to_float(st.session_state.valor_mercaderia_raw, 0.0)
 
-# Submit
+# -------------------- Submit + errores visibles abajo --------------------
 st.write("")
-submit_clicked = st.button("📨 Solicitar cotización", use_container_width=True)
+submit_col = st.container()
+with submit_col:
+    st.markdown('<div id="gt-submit-btn">', unsafe_allow_html=True)
+    submit_clicked = st.button("📨 Solicitar cotización", use_container_width=True, key="gt_submit_btn")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 if submit_clicked:
-    errores = []
-    if not st.session_state.nombre.strip(): errores.append("• Nombre es obligatorio.")
-    if not st.session_state.email.strip() or "@" not in st.session_state.email: errores.append("• Email válido es obligatorio.")
-    if not st.session_state.telefono.strip(): errores.append("• Teléfono es obligatorio.")
-    if not st.session_state.descripcion.strip(): errores.append("• Descripción del producto es obligatoria.")
-    if not st.session_state.link.strip(): errores.append("• Link del producto/ficha técnica es obligatorio.")
-    hay_medidas = any(to_float(r["cant"])>0 and (to_float(r["ancho"])+to_float(r["alto"])+to_float(r["largo"]))>0 for r in st.session_state.rows)
-    if not hay_medidas: errores.append("• Ingresá al menos un bulto con cantidad y medidas.")
-
-    if errores:
-        st.error("Revisá estos puntos:\n\n" + "\n".join(errores))
-    else:
+    st.session_state.form_errors = validate()
+    if not st.session_state.form_errors:
         payload = {
             "timestamp": datetime.utcnow().isoformat(),
             "origen": "streamlit-cotizador",
@@ -227,7 +246,17 @@ if submit_clicked:
         except: pass
         st.session_state.show_dialog = True
 
-# Popup (HTML, compatible)
+# Bloque de errores justo debajo del botón (si los hay)
+if st.session_state.form_errors:
+    st.markdown('<div id="gt-errors">', unsafe_allow_html=True)
+    st.error("Revisá estos puntos:\n\n" + "\n".join(st.session_state.form_errors))
+    st.markdown('</div>', unsafe_allow_html=True)
+    components.html(
+        "<script>var e=document.getElementById('gt-errors');if(e){e.scrollIntoView({behavior:'smooth',block:'center'});}</script>",
+        height=0
+    )
+
+# -------------------- Popup --------------------
 if st.session_state.get("show_dialog", False):
     email = (st.session_state.email or "").strip()
     email_html = f"<a href='mailto:{email}'>{email}</a>" if email else "tu correo"

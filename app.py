@@ -69,11 +69,23 @@ input:-webkit-autofill{
   -webkit-text-fill-color:#000033 !important;
 }
 
-/* Botón enviar */
+/* ===== BOTONES ===== */
+/* Estilo general de TODOS los st.button (blancos) */
+div.stButton > button{
+  background:#ffffff !important; color:#000033 !important;
+  border:1.5px solid #dfe7ef !important; border-radius:16px !important;
+  padding:10px 14px !important; min-height:48px !important;
+  box-shadow:0 6px 14px rgba(17,24,39,.08) !important;
+  width:100% !important;        /* para alinear con inputs */
+  display:flex; align-items:center; justify-content:center;
+}
+div.stButton > button:hover{ background:#f7faff !important; }
+
+/* Botón ENVIAR (mantiene su estilo propio) */
 #gt-submit-btn button{
   width:100% !important; background:#f3f5fb !important; color:#000033 !important;
   border:2px solid #000033 !important; border-radius:16px !important; padding:14px 18px !important;
-  box-shadow:0 4px 10px rgba(0,16,64,.08) !important;
+  box-shadow:0 4px 10px rgba(0,16,64,.08) !important; min-height:auto !important;
 }
 #gt-submit-btn button:hover{ background:#eef3ff !important; }
 
@@ -95,7 +107,6 @@ input:-webkit-autofill{
   div[data-testid="stNumberInput"] input{ font-size:18px !important; }
 }
 </style>
-
 """, unsafe_allow_html=True)
 
 # -------------------- Constantes --------------------
@@ -178,8 +189,10 @@ def validate():
     if not st.session_state.telefono.strip(): errs.append("• Teléfono es obligatorio.")
     if not st.session_state.descripcion.strip(): errs.append("• Descripción del producto es obligatoria.")
     if not st.session_state.link.strip(): errs.append("• Link del producto/ficha técnica es obligatorio.")
-    hay_medidas = any(to_float(r["cant"])>0 and (to_float(r["ancho"])+to_float(r["alto"])+to_float(r["largo"]))>0
-                      for r in st.session_state.rows)
+    hay_medidas = any(
+        to_float(r["cant"])>0 and (to_float(r["ancho"])+to_float(r["alto"])+to_float(r["largo"]))>0
+        for r in st.session_state.rows
+    )
     if not hay_medidas: errs.append("• Ingresá al menos un bulto con **cantidad** y **medidas**.")
     return errs
 
@@ -195,17 +208,14 @@ st.write("")
 st.subheader("Datos de contacto y del producto")
 c1,c2,c3,c4 = st.columns([1.1,1.1,1.0,0.9])
 with c1:
-    nombre_input = st.text_input("Nombre completo*", value=st.session_state.nombre,
-                                 placeholder="Ej: Juan Pérez", key="nombre_input")
-    st.session_state.nombre = nombre_input
+    st.session_state.nombre = st.text_input("Nombre completo*", value=st.session_state.nombre,
+                                            placeholder="Ej: Juan Pérez", key="nombre_input")
 with c2:
-    email_input = st.text_input("Correo electrónico*", value=st.session_state.email,
-                                placeholder="ejemplo@email.com", key="email_input")
-    st.session_state.email = email_input
+    st.session_state.email = st.text_input("Correo electrónico*", value=st.session_state.email,
+                                           placeholder="ejemplo@email.com", key="email_input")
 with c3:
-    tel_input = st.text_input("Teléfono*", value=st.session_state.telefono,
-                              placeholder="Ej: 11 5555 5555", key="tel_input")
-    st.session_state.telefono = tel_input
+    st.session_state.telefono = st.text_input("Teléfono*", value=st.session_state.telefono,
+                                              placeholder="Ej: 11 5555 5555", key="tel_input")
 with c4:
     st.session_state.es_cliente = st.radio("¿Cliente/alumno de Global Trip?", ["No","Sí"],
                                            index=0 if st.session_state.es_cliente=="No" else 1, horizontal=True)
@@ -222,7 +232,8 @@ st.caption("Cargá por bulto: **cantidad** y **dimensiones en cm**. Calculamos e
 
 # Filas de bultos (cada campo con su label)
 for i, r in enumerate(st.session_state.rows):
-    cols = st.columns([0.9, 1, 1, 1, 0.8])
+    # Última columna con el botón de eliminar alineado y ancho completo
+    cols = st.columns([0.9, 1, 1, 1, 1])
 
     with cols[0]:
         st.session_state.rows[i]["cant"] = st.number_input(
@@ -241,16 +252,17 @@ for i, r in enumerate(st.session_state.rows):
             "Largo (cm)", min_value=0.0, step=1.0, value=float(r["largo"]), key=f"lar_{i}"
         )
     with cols[4]:
-        if st.button("🗑️ Eliminar", key=f"del_{i}"):
+        if st.button("🗑️ Eliminar", key=f"del_{i}", use_container_width=True):
             st.session_state.rows.pop(i)
             st.stop()
 
+# Acciones de tabla: alineadas, fondo blanco y ancho igual
 cc1, cc2 = st.columns([1, 1])
 with cc1:
-    if st.button("➕ Agregar bulto"):
+    if st.button("➕ Agregar bulto", use_container_width=True):
         st.session_state.rows.append({"cant": 0, "ancho": 0, "alto": 0, "largo": 0})
 with cc2:
-    if st.button("🧹 Vaciar tabla"):
+    if st.button("🧹 Vaciar tabla", use_container_width=True):
         st.session_state.rows = [{"cant": 0, "ancho": 0, "alto": 0, "largo": 0}]
 
 # Pesos
@@ -333,4 +345,3 @@ if st.session_state.get("show_dialog", False):
   </div>
 </div>
 """, unsafe_allow_html=True)
-

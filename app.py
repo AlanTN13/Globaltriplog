@@ -225,40 +225,90 @@ st.session_state.link = st.text_input("Link del producto o ficha técnica (Aliba
                                       value=st.session_state.link, placeholder="https://...")
 
 st.write("")
-st.subheader("Bultos")
-st.caption("Cargá por bulto: **cantidad** y **dimensiones en cm**. Calculamos el **peso volumétrico**.")
+# --- BULTOS (fragmento optimizado; si tu versión de Streamlit no lo tiene, cae al fallback) ---
+try:
+    _frag = st.experimental_fragment
+except AttributeError:
+    _frag = None
 
-# Filas de bultos (labels sobre cada input)
-for i, r in enumerate(st.session_state.rows):
-    cols = st.columns([0.9, 1, 1, 1])
-    with cols[0]:
-        st.session_state.rows[i]["cant"] = st.number_input("Cantidad", min_value=0, step=1,
-                                                           value=int(r["cant"]), key=f"cant_{i}")
-    with cols[1]:
-        st.session_state.rows[i]["ancho"] = st.number_input("Ancho (cm)", min_value=0.0, step=1.0,
-                                                            value=float(r["ancho"]), key=f"an_{i}")
-    with cols[2]:
-        st.session_state.rows[i]["alto"] = st.number_input("Alto (cm)", min_value=0.0, step=1.0,
-                                                           value=float(r["alto"]), key=f"al_{i}")
-    with cols[3]:
-        st.session_state.rows[i]["largo"] = st.number_input("Largo (cm)", min_value=0.0, step=1.0,
-                                                            value=float(r["largo"]), key=f"lar_{i}")
+if _frag:
+    @st.experimental_fragment
+    def render_bultos():
+        st.subheader("Bultos")
+        st.caption("Cargá por bulto: **cantidad** y **dimensiones en cm**. Calculamos el **peso volumétrico**.")
 
-# Acciones (desktop en fila; mobile apiladas). Fondo blanco por CSS global.
-st.markdown('<div class="gt-bultos-actions">', unsafe_allow_html=True)
-cA, cB, cC = st.columns(3)
-with cA:
-    if st.button("➕ Agregar bulto", use_container_width=True):
-        st.session_state.rows.append({"cant": 0, "ancho": 0, "alto": 0, "largo": 0})
-with cB:
-    if st.button("🧹 Vaciar tabla", use_container_width=True):
-        st.session_state.rows = [{"cant": 0, "ancho": 0, "alto": 0, "largo": 0}]
-with cC:
-    disable_del = len(st.session_state.rows) <= 1
-    if st.button("🗑️ Eliminar último", use_container_width=True, disabled=disable_del):
-        if not disable_del:
-            st.session_state.rows.pop()
-st.markdown('</div>', unsafe_allow_html=True)
+        # Filas
+        for i, r in enumerate(st.session_state.rows):
+            cols = st.columns([0.9, 1, 1, 1])
+            with cols[0]:
+                st.session_state.rows[i]["cant"] = st.number_input("Cantidad", min_value=0, step=1,
+                                                                   value=int(r["cant"]), key=f"cant_{i}")
+            with cols[1]:
+                st.session_state.rows[i]["ancho"] = st.number_input("Ancho (cm)", min_value=0.0, step=1.0,
+                                                                    value=float(r["ancho"]), key=f"an_{i}")
+            with cols[2]:
+                st.session_state.rows[i]["alto"] = st.number_input("Alto (cm)", min_value=0.0, step=1.0,
+                                                                   value=float(r["alto"]), key=f"al_{i}")
+            with cols[3]:
+                st.session_state.rows[i]["largo"] = st.number_input("Largo (cm)", min_value=0.0, step=1.0,
+                                                                    value=float(r["largo"]), key=f"lar_{i}")
+
+        # Acciones (alineadas en desktop; apiladas en mobile por CSS)
+        st.markdown('<div class="gt-bultos-actions">', unsafe_allow_html=True)
+        cA, cB, cC = st.columns(3)
+        with cA:
+            if st.button("➕ Agregar bulto", use_container_width=True, key="btn_add"):
+                st.session_state.rows.append({"cant": 0, "ancho": 0, "alto": 0, "largo": 0})
+        with cB:
+            if st.button("🧹 Vaciar tabla", use_container_width=True, key="btn_clear"):
+                st.session_state.rows = [{"cant": 0, "ancho": 0, "alto": 0, "largo": 0}]
+        with cC:
+            disable_del = len(st.session_state.rows) <= 1
+            if st.button("🗑️ Eliminar último", use_container_width=True, disabled=disable_del, key="btn_del"):
+                if not disable_del:
+                    st.session_state.rows.pop()
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        return compute_total_vol(st.session_state.rows)
+
+    # Render del fragmento y guardamos el total ya calculado
+    total_peso_vol = render_bultos()
+
+else:
+    # Fallback (tu bloque actual; se deja por compatibilidad)
+    st.subheader("Bultos")
+    st.caption("Cargá por bulto: **cantidad** y **dimensiones en cm**. Calculamos el **peso volumétrico**.")
+    for i, r in enumerate(st.session_state.rows):
+        cols = st.columns([0.9, 1, 1, 1])
+        with cols[0]:
+            st.session_state.rows[i]["cant"] = st.number_input("Cantidad", min_value=0, step=1,
+                                                               value=int(r["cant"]), key=f"cant_{i}")
+        with cols[1]:
+            st.session_state.rows[i]["ancho"] = st.number_input("Ancho (cm)", min_value=0.0, step=1.0,
+                                                                value=float(r["ancho"]), key=f"an_{i}")
+        with cols[2]:
+            st.session_state.rows[i]["alto"] = st.number_input("Alto (cm)", min_value=0.0, step=1.0,
+                                                               value=float(r["alto"]), key=f"al_{i}")
+        with cols[3]:
+            st.session_state.rows[i]["largo"] = st.number_input("Largo (cm)", min_value=0.0, step=1.0,
+                                                                value=float(r["largo"]), key=f"lar_{i}")
+
+    st.markdown('<div class="gt-bultos-actions">', unsafe_allow_html=True)
+    cA, cB, cC = st.columns(3)
+    with cA:
+        if st.button("➕ Agregar bulto", use_container_width=True):
+            st.session_state.rows.append({"cant": 0, "ancho": 0, "alto": 0, "largo": 0})
+    with cB:
+        if st.button("🧹 Vaciar tabla", use_container_width=True):
+            st.session_state.rows = [{"cant": 0, "ancho": 0, "alto": 0, "largo": 0}]
+    with cC:
+        disable_del = len(st.session_state.rows) <= 1
+        if st.button("🗑️ Eliminar último", use_container_width=True, disabled=disable_del):
+            if not disable_del:
+                st.session_state.rows.pop()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    total_peso_vol = compute_total_vol(st.session_state.rows)
 
 # Pesos (unificamos en un solo dato: Peso aplicable)
 st.write("")
@@ -293,7 +343,6 @@ st.session_state.valor_mercaderia = to_float(st.session_state.valor_mercaderia_r
 st.write("")
 st.markdown('<div id="gt-submit-btn">', unsafe_allow_html=True)
 submit_clicked = st.button("📨 Solicitar cotización", use_container_width=True, key="gt_submit_btn")
-st.markdown('</div>', unsafe_allow_html=True)
 
 if submit_clicked:
     st.session_state.form_errors = validate()

@@ -11,7 +11,7 @@ import streamlit.components.v1 as components
 # -------------------- Config --------------------
 st.set_page_config(page_title="Cotizador GlobalTrip", page_icon="📦", layout="wide")
 
-# -------------------- Estilos globales --------------------
+# -------------------- Estilos (claro + #000033 + botón borde azul) --------------------
 st.markdown("""
 <style>
 :root { color-scheme: light !important; }
@@ -22,7 +22,7 @@ section.main, [data-testid="stHeader"], [data-testid="stSidebar"]{
   background:#FFFFFF !important; color:#000033 !important;
 }
 
-/* Forzar todo texto #000033 */
+/* Forzar todo texto */
 body, .stApp, div, p, span, label, h1,h2,h3,h4,h5,h6, a, small, strong, em, th, td,
 div[data-testid="stMarkdownContainer"] * { color:#000033 !important; }
 
@@ -70,8 +70,10 @@ div[data-testid="stMetricLabel"], div[data-testid="stMetricValue"]{ color:#00003
   background:#fff !important; color:#000033 !important; border-color:#dfe7ef !important;
 }
 
-/* Botón "Solicitar cotización": fondo claro + BORDE AZUL */
-div.stButton > button{
+/* ===== Botón del FORM (form_submit_button) – claro + BORDE AZUL =====
+   Target explícito del botón del formulario para que NO lo pise el tema */
+.gt-submit [data-testid="baseButton-secondaryFormSubmit"],
+.gt-submit button[kind="secondaryFormSubmit"]{
   width:100%;
   background:#f3f5fb !important;
   color:#000033 !important;
@@ -81,12 +83,13 @@ div.stButton > button{
   box-shadow:0 4px 10px rgba(0,16,64,.08) !important;
   transition:transform .04s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
 }
-div.stButton > button:hover{
+.gt-submit [data-testid="baseButton-secondaryFormSubmit"]:hover,
+.gt-submit button[kind="secondaryFormSubmit"]:hover{
   background:#eef3ff !important;
-  border-color:#000033 !important;
   box-shadow:0 6px 14px rgba(0,16,64,.12) !important;
 }
-div.stButton > button:active{ transform: translateY(1px); }
+.gt-submit [data-testid="baseButton-secondaryFormSubmit"]:active,
+.gt-submit button[kind="secondaryFormSubmit"]:active{ transform: translateY(1px); }
 
 /* ===== Overlay (popup) ===== */
 .gt-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999; display:flex; align-items:center; justify-content:center; }
@@ -140,25 +143,27 @@ def reset_form():
         "show_dialog": False
     })
 
-# -------------------- QueryString helpers (compatibles) --------------------
+# -------------------- QueryString helpers (SIN experimental_) --------------------
 def get_qs():
     try:
-        return st.experimental_get_query_params()
+        return dict(st.query_params)
     except Exception:
         return {}
 
 def set_qs(**kwargs):
     try:
-        st.experimental_set_query_params(**kwargs)
+        st.query_params.clear()
+        for k, v in kwargs.items():
+            st.query_params[k] = v
     except Exception:
         pass
 
-# Procesar acciones del popup (desde JS)
+# Acciones desde el popup (por query string)
 _qs = get_qs()
-if _qs.get("gt", [""])[0] == "reset":
-    reset_form(); set_qs(); st.experimental_rerun()
-elif _qs.get("gt", [""])[0] == "close":
-    st.session_state.show_dialog = False; set_qs(); st.experimental_rerun()
+if _qs.get("gt", "") == "reset":
+    reset_form(); set_qs(); st.rerun()
+elif _qs.get("gt", "") == "close":
+    st.session_state.show_dialog = False; set_qs(); st.rerun()
 
 # -------------------- Utilidades --------------------
 def compute_vol(df: pd.DataFrame):
@@ -253,7 +258,10 @@ with st.form("cotizador", clear_on_submit=False):
         pass
 
     st.write("")
+    # Wrapper para aplicar estilos específicos del botón del FORM
+    st.markdown('<div class="gt-submit">', unsafe_allow_html=True)
     submitted = st.form_submit_button("📨 Solicitar cotización", use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # Submit
 if submitted:
@@ -292,12 +300,11 @@ if submitted:
             },
             "valor_mercaderia_usd": float(st.session_state.valor_mercaderia)
         }
-        # best-effort
         try: post_to_webhook(payload)
         except: pass
         st.session_state.show_dialog = True
 
-# Popup (HTML overlay – sin st.modal, compatible con todas las versiones)
+# Popup (HTML overlay – compatible con todas las versiones)
 if st.session_state.get("show_dialog", False):
     email = (st.session_state.email or "").strip()
     email_html = f"<a href='mailto:{email}'>{email}</a>" if email else "tu correo"

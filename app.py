@@ -1,17 +1,13 @@
 # app.py
 from __future__ import annotations
 import os, json, requests
-from base64 import b64encode
 from datetime import datetime
 
+import numpy as np
 import streamlit as st
 
 # -------------------- Config --------------------
-st.set_page_config(
-    page_title="Cotizador GlobalTrip",
-    page_icon="📦",          # Favicon fijo: cajita 📦
-    layout="wide",
-)
+st.set_page_config(page_title="Cotizador GlobalTrip", page_icon="📦", layout="wide")
 
 # -------------------- Estilos (claro forzado + #000033) --------------------
 st.markdown("""
@@ -27,21 +23,11 @@ section.main, [data-testid="stHeader"], [data-testid="stSidebar"]{
 div, p, span, label, h1,h2,h3,h4,h5,h6, a, small, strong, em, th, td,
 div[data-testid="stMarkdownContainer"] * { color:#000033 !important; }
 
-/* Tarjetas suaves / contenedores */
+/* Card */
 .soft-card{
   background:#fff; border:1.5px solid #dfe7ef; border-radius:16px;
   padding:18px 20px; box-shadow:0 8px 18px rgba(17,24,39,.07);
 }
-
-/* Header con logo y título */
-.gt-hero{
-  display:flex; align-items:center; gap:16px;
-  background:#fff; border:1.5px solid #dfe7ef; border-radius:16px;
-  padding:18px 20px; box-shadow:0 8px 18px rgba(17,24,39,.07);
-}
-.gt-hero .gt-logo{ max-height:56px; width:auto; }
-.gt-hero .gt-title{ margin:0; font-size:34px; font-weight:800; }
-.gt-hero p{ margin:4px 0 0 0; }
 
 /* Inputs base */
 div[data-testid="stTextInput"] input,
@@ -81,13 +67,16 @@ input:-webkit-autofill{
   -webkit-text-fill-color:#000033 !important;
 }
 
-/* Botones (blancos) */
+/* Botones (todos en blanco) */
 div.stButton > button{
   width:100%; background:#ffffff !important; color:#000033 !important;
   border:1.5px solid #dfe7ef !important; border-radius:16px !important;
   padding:14px 18px !important; box-shadow:0 6px 16px rgba(17,24,39,.06) !important;
 }
 div.stButton > button:hover{ background:#f6f9ff !important; }
+
+/* Botón enviar (mismo estilo blanco) */
+#gt-submit-btn button{ width:100% !important; }
 
 /* Pill de Peso aplicable */
 .gt-pill{
@@ -109,7 +98,7 @@ div.stButton > button:hover{ background:#f6f9ff !important; }
   border-radius:16px; background:#eef5ff; color:#000033; padding:14px 16px;
   cursor:pointer; font-size:18px; text-decoration:none; }
 
-/* Acciones de bultos: una fila en desktop, apiladas en mobile */
+/* Acciones de bultos: fila en desktop, apiladas en mobile */
 @media (min-width: 900px){
   .gt-bultos-actions{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
 }
@@ -120,9 +109,6 @@ div.stButton > button:hover{ background:#f6f9ff !important; }
 /* Mobile tweaks */
 @media (max-width: 640px){
   .soft-card{ padding:16px; }
-  .gt-hero{ gap:12px; }
-  .gt-hero .gt-logo{ max-height:44px; }
-  .gt-hero .gt-title{ font-size:28px; }
   div[data-testid="stNumberInput"] input{ font-size:18px !important; }
 }
 </style>
@@ -148,13 +134,20 @@ def init_state():
 init_state()
 
 # -------------------- QS helpers (manejo ?gt=...) --------------------
-# No usamos st.rerun dentro de callbacks (evita warnings). Simplemente leemos y limpiamos el parámetro.
-try:
-    gt_action = st.query_params.get("gt", "")
-except Exception:
-    gt_action = ""
+def get_qs():
+    try: return dict(st.query_params)
+    except: return {}
 
-def reset_form():
+def set_qs(**kwargs):
+    try:
+        st.query_params.clear()
+        for k,v in kwargs.items():
+            st.query_params[k] = v
+    except:
+        pass
+
+_qs = get_qs()
+if _qs.get("gt","") == "reset":
     st.session_state.update({
         "rows":[{"cant":0, "ancho":0, "alto":0, "largo":0}],
         "nombre":"", "email":"", "telefono":"", "es_cliente":"No",
@@ -163,20 +156,17 @@ def reset_form():
         "valor_mercaderia_raw":"0.00", "valor_mercaderia":0.0,
         "show_dialog": False, "form_errors":[]
     })
-
-if gt_action == "reset":
-    reset_form()
-    try: st.query_params.clear()
-    except: pass
-elif gt_action == "close":
+    set_qs()  # sin rerun
+elif _qs.get("gt","") == "close":
     st.session_state.show_dialog = False
-    try: st.query_params.clear()
-    except: pass
+    set_qs()  # sin rerun
 
 # -------------------- Helpers --------------------
 def to_float(s, default=0.0):
-    try: return float(str(s).replace(",",".")) if s not in (None,"") else default
-    except: return default
+    try:
+        return float(str(s).replace(",",".")) if s not in (None,"") else default
+    except:
+        return default
 
 def compute_total_vol(rows):
     total = 0.0
@@ -187,8 +177,7 @@ def compute_total_vol(rows):
 def post_to_webhook(payload: dict):
     url = st.secrets.get("N8N_WEBHOOK_URL", os.getenv("N8N_WEBHOOK_URL",""))
     token = st.secrets.get("N8N_TOKEN", os.getenv("N8N_TOKEN",""))
-    if not url:
-        return True, "Sin webhook configurado."
+    if not url: return True, "Sin webhook configurado."
     headers = {"Content-Type":"application/json"}
     if token: headers["Authorization"] = f"Bearer {token}"
     try:
@@ -204,41 +193,33 @@ def validate():
     if not st.session_state.telefono.strip(): errs.append("• Teléfono es obligatorio.")
     if not st.session_state.descripcion.strip(): errs.append("• Descripción del producto es obligatoria.")
     if not st.session_state.link.strip(): errs.append("• Link del producto/ficha técnica es obligatorio.")
-    hay_medidas = any(to_float(r["cant"])>0 and (to_float(r["ancho"])+to_float(r["alto"])+to_float(r["largo"]))>0
-                      for r in st.session_state.rows)
+    hay_medidas = any(
+        to_float(r["cant"])>0 and (to_float(r["ancho"])+to_float(r["alto"])+to_float(r["largo"]))>0
+        for r in st.session_state.rows
+    )
     if not hay_medidas: errs.append("• Ingresá al menos un bulto con **cantidad** y **medidas**.")
     return errs
 
-def img_b64(path: str) -> str | None:
-    try:
-        with open(path, "rb") as f:
-            return b64encode(f.read()).decode()
-    except Exception:
-        return None
+# -------------------- Callbacks --------------------
+def add_row():
+    st.session_state.rows.append({"cant": 0, "ancho": 0, "alto": 0, "largo": 0})
 
-# -------------------- Header con logo + título --------------------
-logo_b64 = img_b64("assets/logo_globaltrip.png")
-if logo_b64:
-    st.markdown(f"""
-    <div class="gt-hero">
-      <img class="gt-logo" src="data:image/png;base64,{logo_b64}" alt="GlobalTrip" />
-      <div>
-        <h2 class="gt-title">📦 Cotización de Envío por Courier</h2>
-        <p>Completá tus datos y medidas. Te mandamos la cotización por email.</p>
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
-else:
-    st.markdown("""
-    <div class="soft-card">
-      <h2 style="margin:0;">📦 Cotización de Envío por Courier</h2>
-      <p style="margin:6px 0 0;">Completá tus datos y medidas. Te mandamos la cotización por email.</p>
-    </div>
-    """, unsafe_allow_html=True)
+def clear_rows():
+    st.session_state.rows = [{"cant": 0, "ancho": 0, "alto": 0, "largo": 0}]
 
+def remove_last():
+    if len(st.session_state.rows) > 1:
+        st.session_state.rows.pop()
+
+# -------------------- UI --------------------
+st.markdown("""
+<div class="soft-card">
+  <h2 style="margin:0;">📦 Cotización de Envío por Courier</h2>
+  <p style="margin:6px 0 0;">Completá tus datos y medidas. Te mandamos la cotización por email.</p>
+</div>
+""", unsafe_allow_html=True)
 st.write("")
 
-# -------------------- Formulario --------------------
 st.subheader("Datos de contacto y del producto")
 c1,c2,c3,c4 = st.columns([1.1,1.1,1.0,0.9])
 with c1:
@@ -283,19 +264,15 @@ for i, r in enumerate(st.session_state.rows):
 st.markdown('<div class="gt-bultos-actions">', unsafe_allow_html=True)
 cA, cB, cC = st.columns(3)
 with cA:
-    if st.button("➕ Agregar bulto", use_container_width=True):
-        st.session_state.rows.append({"cant": 0, "ancho": 0, "alto": 0, "largo": 0})
+    st.button("➕ Agregar bulto", use_container_width=True, on_click=add_row)
 with cB:
-    if st.button("🧹 Vaciar tabla", use_container_width=True):
-        st.session_state.rows = [{"cant": 0, "ancho": 0, "alto": 0, "largo": 0}]
+    st.button("🧹 Vaciar tabla", use_container_width=True, on_click=clear_rows)
 with cC:
-    disable_del = len(st.session_state.rows) <= 1
-    if st.button("🗑️ Eliminar último", use_container_width=True, disabled=disable_del):
-        if not disable_del:
-            st.session_state.rows.pop()
+    st.button("🗑️ Eliminar último", use_container_width=True,
+              on_click=remove_last, disabled=(len(st.session_state.rows) <= 1))
 st.markdown('</div>', unsafe_allow_html=True)
 
-# -------------------- Pesos (unificado: Peso aplicable) --------------------
+# Pesos (unificamos en un solo dato: Peso aplicable)
 st.write("")
 st.subheader("Pesos")
 m1, m2 = st.columns([1.2, 1.0])
@@ -317,14 +294,14 @@ with m2:
     """, unsafe_allow_html=True)
     st.caption(f"Se toma el mayor entre volumétrico ({total_peso_vol:,.2f}) y bruto ({st.session_state.peso_bruto:,.2f}).")
 
-# -------------------- Valor de la mercadería --------------------
+# Valor mercadería
 st.subheader("Valor de la mercadería")
 st.session_state.valor_mercaderia_raw = st.text_input(
     "Valor de la mercadería (USD)", value=st.session_state.valor_mercaderia_raw
 )
 st.session_state.valor_mercaderia = to_float(st.session_state.valor_mercaderia_raw, 0.0)
 
-# -------------------- Submit --------------------
+# Submit (blanco, borde suave)
 st.write("")
 st.markdown('<div id="gt-submit-btn">', unsafe_allow_html=True)
 submit_clicked = st.button("📨 Solicitar cotización", use_container_width=True, key="gt_submit_btn")
@@ -355,7 +332,6 @@ if submit_clicked:
             },
             "valor_mercaderia_usd": st.session_state.valor_mercaderia
         }
-        # Envío best-effort si hubiera webhook
         try: post_to_webhook(payload)
         except: pass
         st.session_state.show_dialog = True
@@ -364,7 +340,7 @@ if submit_clicked:
 if st.session_state.form_errors:
     st.error("Revisá estos puntos:\n\n" + "\n".join(st.session_state.form_errors))
 
-# -------------------- Popup post-submit (sin JS/iframe) --------------------
+# Popup post-submit sin iframe/JS
 if st.session_state.get("show_dialog", False):
     email = (st.session_state.email or "").strip()
     email_html = f"<a href='mailto:{email}'>{email}</a>" if email else "tu correo"

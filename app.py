@@ -12,116 +12,105 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# -------------------- Estilos --------------------
+# -------------------- Estilos (coherencia visual) --------------------
 st.markdown("""
 <style>
-:root { color-scheme: light !important; }
-html, body, .stApp, [data-testid="stAppViewContainer"],
-section.main, [data-testid="stHeader"], [data-testid="stSidebar"]{ background:#FFF !important; color:#000033 !important; }
+/* ===== Design tokens ===== */
+:root{
+  --ink:#0e1b3d;
+  --muted:#0e1b3db3;
+  --bg:#ffffff;
+  --border:#e6ebf3;
+  --card-shadow:0 6px 16px rgba(17,24,39,.06);
+  --radius:14px;
 
-/* Quitar header/márgenes sup. */
-:root{ --header-height:0px !important; }
-[data-testid="stHeader"], [data-testid="stToolbar"]{ display:none !important; }
+  /* escala espaciados (4/8/12/16/24) */
+  --s-1:4px; --s0:8px; --s1:12px; --s2:16px; --s3:24px;
+}
+
+/* ===== Reset de layout streamlit ===== */
+:root{ --header-height:0 !important; }
+[data-testid="stHeader"], [data-testid="stToolbar"], #MainMenu, footer, header,
+div[data-testid="stDecoration"]{ display:none !important; }
+
+html, body, .stApp, [data-testid="stAppViewContainer"], section.main{ background:var(--bg) !important; color:var(--ink) !important; }
 [data-testid="stAppViewContainer"]{ padding-top:0 !important; }
 section.main{ padding-top:0 !important; }
+section.main > div.block-container{ padding-top:var(--s0) !important; padding-bottom:var(--s3) !important; }
 
-/* ====== ESPACIADOS AL MÍNIMO ====== */
-section.main > div.block-container{
-  padding-top:.05rem !important;
-  padding-bottom:.40rem !important;
-}
-div.stMarkdown, div[data-testid="stVerticalBlock"], div[data-testid="stHorizontalBlock"], div[data-testid="column"]{
-  margin-top:0 !important; margin-bottom:0 !important;
-}
-[data-testid="stVerticalBlock"]{ gap:6px !important; }
-[data-testid="stHorizontalBlock"]{ gap:8px !important; }
+/* tipografía y márgenes consistentes */
+h1,h2,h3,h4,h5,h6{ color:var(--ink) !important; margin:var(--s0) 0 var(--s0) 0 !important; }
+p, label, small, span{ color:var(--ink) !important; margin:0 !important; }
+.stCaption, .stMarkdown p, .st-emotion-cache-1629p8f{ color:var(--muted) !important; }
 
-/* Títulos y texto: márgenes ultra bajos */
-h1,h2,h3,h4,h5,h6{ margin:.15rem 0 !important; }
-p, span, small, label{ margin:0 !important; }
-label{ margin-bottom:4px !important; }
-
-/* Subtítulos de Streamlit (st.subheader) suelen tener padding adicional */
-.stHeadingContainer, .stCaption{ margin:0 !important; padding:0 !important; }
-
-/* Separadores finos (reales <hr>) */
-hr{ border:none; border-top:1px solid #dce1e6; margin:6px 0; }
-
-/* Tipografía */
-div, p, span, label, h1,h2,h3,h4,h5,h6, a, small, strong, em, th, td,
-div[data-testid="stMarkdownContainer"] * { color:#000033 !important; }
-
-/* Ancho máximo centrado (desktop) */
+/* ===== Contenedores ===== */
 .gt-section{ max-width:1100px; margin:0 auto; }
-
-/* Card cabecera */
 .soft-card{
-  background:#fff; border:1.5px solid #dfe7ef; border-radius:16px;
-  padding:14px 16px; box-shadow:0 8px 18px rgba(17,24,39,.07);
+  background:var(--bg); border:1.5px solid var(--border); border-radius:var(--radius);
+  padding:var(--s2); box-shadow:0 8px 18px rgba(17,24,39,.07);
+  margin:var(--s2) 0 var(--s2);
 }
-
-/* Tarjetas internas */
 .gt-card{
-  background:#fff; border:1.5px solid #dfe7ef; border-radius:16px;
-  padding:12px; box-shadow:0 6px 16px rgba(17,24,39,.06); margin:6px 0 10px;
+  background:var(--bg); border:1.5px solid var(--border); border-radius:var(--radius);
+  padding:var(--s2); box-shadow:var(--card-shadow);
+  margin:var(--s1) 0 var(--s1);
 }
 
-/* Inputs texto */
+/* separar bloques y columnas con el mismo gap */
+div[data-testid="stVerticalBlock"]{ gap:var(--s2) !important; }
+div[data-testid="stHorizontalBlock"]{ gap:var(--s2) !important; }
+div[data-testid="column"]{ padding:0 !important; }
+
+/* ===== Inputs ===== */
 div[data-testid="stTextInput"] input,
-div[data-testid="stTextArea"] textarea {
-  background:#fff !important; color:#000033 !important;
-  border:1.5px solid #dfe7ef !important; border-radius:16px !important;
-  padding:10px 12px !important; box-shadow:none !important;
+div[data-testid="stTextArea"] textarea{
+  background:var(--bg) !important; color:var(--ink) !important;
+  border:1.5px solid var(--border) !important; border-radius:var(--radius) !important;
+  padding:12px var(--s2) !important; box-shadow:none !important;
 }
 div[data-testid="stTextInput"] input::placeholder,
-div[data-testid="stTextArea"] textarea::placeholder { color:#00003399 !important; }
+div[data-testid="stTextArea"] textarea::placeholder{ color:var(--muted) !important; }
 
-/* NumberInput (± claro) */
+/* NumberInput: misma altura y menos “ruido” */
 div[data-testid="stNumberInput"] > div{
-  background:#fff !important; border:1.5px solid #dfe7ef !important;
+  background:var(--bg) !important; border:1.5px solid var(--border) !important;
   border-radius:24px !important; box-shadow:none !important;
 }
 div[data-testid="stNumberInput"] input{
-  background:#fff !important; color:#000033 !important;
-  padding:10px 12px !important; height:44px !important; border:none !important;
+  background:var(--bg) !important; color:var(--ink) !important;
+  height:44px !important; padding:0 var(--s2) !important; border:none !important;
 }
 div[data-testid="stNumberInput"] > div > div:nth-child(2){
-  background:#fff !important; border-left:1.5px solid #dfe7ef !important;
-  border-radius:0 24px 24px 0 !important; padding:1px !important;
+  background:var(--bg) !important; border-left:1.5px solid var(--border) !important;
+  border-radius:0 24px 24px 0 !important; padding:2px !important;
 }
 div[data-testid="stNumberInput"] button{
-  background:#eef3ff !important; color:#000033 !important;
-  border:1px solid #dfe7ef !important; border-radius:12px !important; box-shadow:none !important;
+  background:#eef3ff !important; color:var(--ink) !important;
+  border:1px solid var(--border) !important; border-radius:10px !important; box-shadow:none !important;
 }
 
-/* Botones */
-div.stButton { margin:0 !important; }
+/* ===== Botones ===== */
+div.stButton{ margin:0 !important; }
 div.stButton > button{
-  width:100%; background:#ffffff !important; color:#000033 !important;
-  border:1.5px solid #dfe7ef !important; border-radius:16px !important;
-  padding:10px 14px !important; box-shadow:0 6px 16px rgba(17,24,39,.06) !important;
+  width:100%; background:#f7faff !important; color:var(--ink) !important;
+  border:1.5px solid var(--border) !important; border-radius:var(--radius) !important;
+  padding:12px var(--s2) !important; box-shadow:var(--card-shadow) !important;
 }
-div.stButton > button:hover{ background:#f6f9ff !important; }
+div.stButton > button:hover{ background:#eef3ff !important; }
 #gt-submit-btn button{ width:100% !important; }
 
-/* Pill peso aplicable */
+/* ===== Elementos utilitarios ===== */
+hr{ border:none; border-top:1px solid var(--border); margin:var(--s1) 0; }
+
 .gt-pill{
-  display:inline-flex; align-items:center; gap:.55rem;
-  background:#fff; border:1.5px solid #dfe7ef; border-radius:14px;
-  padding:8px 12px; box-shadow:0 6px 16px rgba(17,24,39,.06);
-}
-.gt-pill b{ font-size:18px; }
-
-/* Grids Acciones */
-@media (min-width: 900px){
-  .gt-actions-row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-}
-@media (max-width: 899px){
-  .gt-actions-row{ display:grid; grid-template-columns:1fr; gap:8px; }
+  display:inline-flex; align-items:center; gap:var(--s0);
+  background:var(--bg); border:1.5px solid var(--border); border-radius:12px;
+  padding:8px var(--s1); box-shadow:var(--card-shadow);
 }
 
-/* Ocultar decoraciones / menús */
-div[data-testid="stDecoration"], #MainMenu, footer, header { display:none !important; }
+/* ===== Filas de acciones (Agregar/Vaciar) ===== */
+.gt-actions-row{ display:grid; grid-template-columns:1fr 1fr; gap:var(--s2); margin-top:var(--s1); }
+@media (max-width: 899px){ .gt-actions-row{ grid-template-columns:1fr; } }
 </style>
 """, unsafe_allow_html=True)
 

@@ -17,9 +17,8 @@ st.markdown("""
 <style>
 :root { color-scheme: light !important; }
 html, body, .stApp, [data-testid="stAppViewContainer"],
-section.main, [data-testid="stHeader"], [data-testid="stSidebar"]{
-  background:#FFFFFF !important; color:#000033 !important;
-}
+section.main, [data-testid="stHeader"], [data-testid="stSidebar"]{ background:#FFF !important; color:#000033 !important; }
+
 /* Quitar header/márgenes sup. */
 :root{ --header-height:0px !important; }
 [data-testid="stHeader"], [data-testid="stToolbar"]{ display:none !important; }
@@ -29,11 +28,11 @@ section.main > div.block-container{ padding-top:.10rem !important; padding-botto
 section.main > div.block-container > div:first-child{ margin-top:0 !important; }
 div[data-testid="stDecoration"], #MainMenu, footer, header { display:none !important; }
 
-/* Tipografía color base */
+/* Tipografía */
 div, p, span, label, h1,h2,h3,h4,h5,h6, a, small, strong, em, th, td,
 div[data-testid="stMarkdownContainer"] * { color:#000033 !important; }
 
-/* Ancho máximo centrado (mismo ancho desktop) */
+/* Ancho máximo centrado (desktop) */
 .gt-section{ max-width:1100px; margin:0 auto; }
 
 /* Card cabecera */
@@ -68,13 +67,12 @@ div[data-testid="stNumberInput"] input{
   padding:14px 16px !important; height:48px !important; border:none !important;
 }
 div[data-testid="stNumberInput"] > div > div:nth-child(2){
-  background:#ffffff !important; border-left:1.5px solid #dfe7ef !important;
+  background:#fff !important; border-left:1.5px solid #dfe7ef !important;
   border-radius:0 24px 24px 0 !important; padding:2px !important;
 }
 div[data-testid="stNumberInput"] button{
   background:#eef3ff !important; color:#000033 !important;
-  border:1px solid #dfe7ef !important; border-radius:12px !important;
-  box-shadow:none !important;
+  border:1px solid #dfe7ef !important; border-radius:12px !important; box-shadow:none !important;
 }
 
 /* Botones */
@@ -94,18 +92,8 @@ div.stButton > button:hover{ background:#f6f9ff !important; }
 }
 .gt-pill b{ font-size:18px; }
 
-/* Popup */
-.gt-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:99999;
-  display:flex; align-items:center; justify-content:center; }
-.gt-modal{ max-width:680px; width:92%; background:#fff; color:#000033;
-  border:1.5px solid #dfe7ef; border-radius:18px; padding:28px 24px; }
-.gt-actions{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:16px; }
-.gt-btn{ display:inline-block; text-align:center; border:1.5px solid #dfe7ef;
-  border-radius:16px; background:#eef5ff; color:#000033; padding:14px 16px;
-  cursor:pointer; font-size:18px; text-decoration:none; }
-
-/* Separadores finos (si usás <hr>) */
-hr{ border:none; border-top:1px solid #ddd; margin:8px 0; }
+/* Separadores finos (reales <hr>) */
+hr{ border:none; border-top:1px solid #dce1e6; margin:8px 0; }
 
 /* Grids Acciones */
 @media (min-width: 900px){
@@ -125,7 +113,7 @@ def init_state():
     st.session_state.setdefault("nombre","")
     st.session_state.setdefault("email","")
     st.session_state.setdefault("telefono","")
-    st.session_state.setdefault("pais_origen","China")  # default China
+    st.session_state.setdefault("pais_origen","China")   # default China
     st.session_state.setdefault("pais_origen_otro","")
     st.session_state.setdefault("peso_bruto_raw","0.00")
     st.session_state.setdefault("peso_bruto",0.0)
@@ -210,15 +198,17 @@ else:
     st.session_state.pais_origen = "China"
 st.markdown('</div>', unsafe_allow_html=True)
 
-# -------------------- Productos (tarjetas) --------------------
+# -------------------- Productos --------------------
 st.markdown('<div class="gt-section">', unsafe_allow_html=True)
 st.subheader("Productos")
 st.caption("Cargá descripción y link del/los producto(s). Podés agregar varios.")
+st.markdown("<hr>", unsafe_allow_html=True)
+
 del_prod_idx = None
 for i, p in enumerate(st.session_state.productos):
     st.markdown('<div class="gt-card">', unsafe_allow_html=True)
     st.markdown(f"**Producto {i+1}**")
-    pc1, pc2 = st.columns(2)
+    pc1, pc2 = st.columns(2)           # mismo ancho
     with pc1:
         st.session_state.productos[i]["descripcion"] = st.text_area(
             "Descripción*", value=p["descripcion"], key=f"prod_desc_{i}",
@@ -244,10 +234,12 @@ with pB: st.button("🧹 Vaciar productos", on_click=clear_productos, use_contai
 st.markdown('</div>', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
-# -------------------- Bultos (tarjetas) --------------------
+# -------------------- Bultos --------------------
 st.markdown('<div class="gt-section">', unsafe_allow_html=True)
 st.subheader("Bultos")
 st.caption("Cargá por bulto: **cantidad** y **dimensiones en cm**. Calculamos el **peso volumétrico**.")
+st.markdown("<hr>", unsafe_allow_html=True)
+
 del_row_idx = None
 for i, r in enumerate(st.session_state.rows):
     st.markdown('<div class="gt-card">', unsafe_allow_html=True)
@@ -272,7 +264,7 @@ with bb: st.button("🧹 Vaciar bultos", on_click=clear_rows, use_container_widt
 st.markdown('</div>', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
-# -------------------- Peso total (título actualizado) --------------------
+# -------------------- Pesos (título actualizado) --------------------
 st.markdown('<div class="gt-section">', unsafe_allow_html=True)
 st.subheader("Peso total de los bultos")
 m1, m2 = st.columns([1.2, 1.0])
@@ -292,7 +284,7 @@ st.markdown('</div>', unsafe_allow_html=True)
 # -------------------- Valor total (título actualizado) --------------------
 st.markdown('<div class="gt-section">', unsafe_allow_html=True)
 st.subheader("Valor total del pedido")
-st.session_state.valor_mercaderia_raw = st.text_input("Valor total (USD)", value=st.session_state.valor_mercaderia_raw)
+st.session_state.valor_mercaderia_raw = st.text_input("Valor total (USD)", value=st.session_state.valor_mercaderia_raw, placeholder="Ej: 2500.00")
 st.session_state.valor_mercaderia = to_float(st.session_state.valor_mercaderia_raw, 0.0)
 st.markdown('</div>', unsafe_allow_html=True)
 

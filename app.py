@@ -20,7 +20,8 @@ html, body, .stApp, [data-testid="stAppViewContainer"],
 section.main, [data-testid="stHeader"], [data-testid="stSidebar"]{
   background:#FFFFFF !important; color:#000033 !important;
 }
-/* Quitar header/márgenes sup. */
+
+/* Quitar header/márgenes sup. y chrome extra */
 :root{ --header-height:0px !important; }
 [data-testid="stHeader"], [data-testid="stToolbar"]{ display:none !important; }
 [data-testid="stAppViewContainer"]{ padding-top:0 !important; }
@@ -47,7 +48,6 @@ div[data-testid="stMarkdownContainer"] * { color:#000033 !important; }
   background:#fff; border:1.5px solid #dfe7ef; border-radius:16px;
   padding:16px; box-shadow:0 6px 16px rgba(17,24,39,.06); margin:10px 0 16px;
 }
-.gt-card h4{ margin:0 0 8px 0; }
 
 /* Inputs texto */
 div[data-testid="stTextInput"] input,
@@ -117,13 +117,13 @@ div.stButton > button:hover{ background:#f6f9ff !important; }
 
 # -------------------- Estado --------------------
 FACTOR_VOL = 5000
-
 def init_state():
     st.session_state.setdefault("rows", [{"cant":0, "ancho":0, "alto":0, "largo":0}])
     st.session_state.setdefault("productos", [{"descripcion":"", "link":""}])
     st.session_state.setdefault("nombre","")
     st.session_state.setdefault("email","")
     st.session_state.setdefault("telefono","")
+    st.session_state.setdefault("pais_origen","China")
     st.session_state.setdefault("peso_bruto_raw","0.00")
     st.session_state.setdefault("peso_bruto",0.0)
     st.session_state.setdefault("valor_mercaderia_raw","0.00")
@@ -134,13 +134,17 @@ init_state()
 
 # -------------------- Helpers --------------------
 def to_float(s, default=0.0):
-    try: return float(str(s).replace(",",".")) if s not in (None,"") else default
-    except: return default
+    try:
+        return float(str(s).replace(",",".")) if s not in (None,"") else default
+    except:
+        return default
 
 def compute_total_vol(rows):
     total = 0.0
     for r in rows:
-        total += (to_float(r["cant"])*to_float(r["ancho"])*to_float(r["alto"])*to_float(r["largo"])) / FACTOR_VOL
+        total += (
+            to_float(r["cant"]) * to_float(r["ancho"]) * to_float(r["alto"]) * to_float(r["largo"])
+        ) / FACTOR_VOL
     return round(total, 2)
 
 def post_to_webhook(payload: dict):
@@ -160,6 +164,9 @@ def validate():
     if not st.session_state.nombre.strip(): errs.append("• Nombre es obligatorio.")
     if not st.session_state.email.strip() or "@" not in st.session_state.email: errs.append("• Email válido es obligatorio.")
     if not st.session_state.telefono.strip(): errs.append("• Teléfono es obligatorio.")
+    # País de origen: si elige Otro, debe completar texto
+    if st.session_state.pais_origen == "" or st.session_state.pais_origen.isspace():
+        errs.append("• Indicá el país de origen.")
     if not any(p["descripcion"].strip() and p["link"].strip() for p in st.session_state.productos):
         errs.append("• Cargá al menos un producto con descripción y link.")
     if not any(
@@ -169,7 +176,7 @@ def validate():
         errs.append("• Ingresá al menos un bulto con cantidad y medidas.")
     return errs
 
-# -------------------- Callbacks simples --------------------
+# -------------------- Callbacks --------------------
 def add_row(): st.session_state.rows.append({"cant": 0, "ancho": 0, "alto": 0, "largo": 0})
 def clear_rows(): st.session_state.rows = [{"cant": 0, "ancho": 0, "alto": 0, "largo": 0}]
 def add_producto(): st.session_state.productos.append({"descripcion":"", "link":""})
@@ -185,34 +192,46 @@ st.markdown("""
 st.write("")
 
 # -------------------- Datos de contacto --------------------
-with st.container():
-    st.markdown('<div class="gt-section">', unsafe_allow_html=True)
-    st.subheader("Datos de contacto")
-    c1,c2,c3 = st.columns([1.1,1.1,1.0])
-    with c1: st.session_state.nombre = st.text_input("Nombre completo*", value=st.session_state.nombre, placeholder="Ej: Juan Pérez")
-    with c2: st.session_state.email = st.text_input("Correo electrónico*", value=st.session_state.email, placeholder="ejemplo@email.com")
-    with c3: st.session_state.telefono = st.text_input("Teléfono*", value=st.session_state.telefono, placeholder="Ej: 11 5555 5555")
-    st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('<div class="gt-section">', unsafe_allow_html=True)
+st.subheader("Datos de contacto")
+c1,c2,c3 = st.columns([1.1,1.1,1.0])
+with c1: st.session_state.nombre = st.text_input("Nombre completo*", value=st.session_state.nombre, placeholder="Ej: Juan Pérez")
+with c2: st.session_state.email = st.text_input("Correo electrónico*", value=st.session_state.email, placeholder="ejemplo@email.com")
+with c3: st.session_state.telefono = st.text_input("Teléfono*", value=st.session_state.telefono, placeholder="Ej: 11 5555 5555")
+st.markdown('</div>', unsafe_allow_html=True)
+
+# -------------------- País de origen (aplica a todos los productos) --------------------
+st.markdown('<div class="gt-section">', unsafe_allow_html=True)
+st.subheader("País de origen")
+opcion_pais = st.radio("Seleccioná el país de origen:", ["China", "Otro"], index=0, horizontal=True, key="opcion_pais")
+if opcion_pais == "Otro":
+    st.session_state.pais_origen = st.text_input(
+        "Ingresá el país de origen",
+        value=("" if st.session_state.pais_origen == "China" else st.session_state.pais_origen)
+    ).strip()
+else:
+    st.session_state.pais_origen = "China"
+st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------- Productos (tarjetas) --------------------
 st.markdown('<div class="gt-section">', unsafe_allow_html=True)
 st.subheader("Productos")
 st.caption("Cargá descripción y link del/los producto(s). Podés agregar varios.")
 
-# manejar eliminación por índice tras el loop
 del_prod_idx = None
 for i, p in enumerate(st.session_state.productos):
     st.markdown('<div class="gt-card">', unsafe_allow_html=True)
     st.markdown(f"**Producto {i+1}**")
-    pc1, pc2 = st.columns([1, 1])
+    pc1, pc2 = st.columns(2)  # mismo ancho
     with pc1:
         st.session_state.productos[i]["descripcion"] = st.text_area(
             "Descripción*", value=p["descripcion"], key=f"prod_desc_{i}",
-            placeholder='Ej: "Máquina selladora de bolsas"', height=120
+            placeholder='Ej: "Máquina selladora de bolsas"', height=100
         )
     with pc2:
-        st.session_state.productos[i]["link"] = st.text_input(
-            "Link*", value=p["link"], key=f"prod_link_{i}", placeholder="https://..."
+        st.session_state.productos[i]["link"] = st.text_area(
+            "Link*", value=p["link"], key=f"prod_link_{i}",
+            placeholder="https://...", height=100
         )
     col_del, _ = st.columns([1,3])
     with col_del:
@@ -224,9 +243,9 @@ if del_prod_idx is not None:
     st.session_state.productos.pop(del_prod_idx)
 
 st.markdown('<div class="gt-actions-row">', unsafe_allow_html=True)
-cpa, cpb = st.columns(2)
-with cpa: st.button("➕ Agregar producto", on_click=add_producto, use_container_width=True)
-with cpb: st.button("🧹 Vaciar productos", on_click=clear_productos, use_container_width=True)
+pA, pB = st.columns(2)
+with pA: st.button("➕ Agregar producto", on_click=add_producto, use_container_width=True)
+with pB: st.button("🧹 Vaciar productos", on_click=clear_productos, use_container_width=True)
 st.markdown('</div>', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
@@ -271,12 +290,6 @@ with m1:
     )
     st.session_state.peso_bruto = to_float(st.session_state.peso_bruto_raw, 0.0)
 
-def compute_total_vol(rows):
-    total = 0.0
-    for r in rows:
-        total += (to_float(r["cant"])*to_float(r["ancho"])*to_float(r["alto"])*to_float(r["largo"])) / FACTOR_VOL
-    return round(total, 2)
-
 total_peso_vol = compute_total_vol(st.session_state.rows)
 peso_aplicable = max(total_peso_vol, st.session_state.peso_bruto)
 
@@ -311,6 +324,7 @@ if submit_clicked:
                 "email": st.session_state.email.strip(),
                 "telefono": st.session_state.telefono.strip()
             },
+            "pais_origen": st.session_state.pais_origen or "China",
             "productos": productos_validos,
             "bultos": st.session_state.rows,
             "pesos": {
@@ -320,8 +334,10 @@ if submit_clicked:
             },
             "valor_mercaderia_usd": st.session_state.valor_mercaderia
         }
-        try: post_to_webhook(payload)
-        except: pass
+        try:
+            post_to_webhook(payload)
+        except:
+            pass
         st.session_state.show_dialog = True
 
 # -------------------- Errores --------------------

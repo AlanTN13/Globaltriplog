@@ -20,6 +20,7 @@ html, body, .stApp, [data-testid="stAppViewContainer"],
 section.main, [data-testid="stHeader"], [data-testid="stSidebar"]{
   background:#FFFFFF !important; color:#000033 !important;
 }
+/* Quitar header/márgenes sup. */
 :root{ --header-height:0px !important; }
 [data-testid="stHeader"], [data-testid="stToolbar"]{ display:none !important; }
 [data-testid="stAppViewContainer"]{ padding-top:0 !important; }
@@ -28,13 +29,14 @@ section.main > div.block-container{ padding-top:.10rem !important; padding-botto
 section.main > div.block-container > div:first-child{ margin-top:0 !important; }
 div[data-testid="stDecoration"], #MainMenu, footer, header { display:none !important; }
 
+/* Tipografía color base */
 div, p, span, label, h1,h2,h3,h4,h5,h6, a, small, strong, em, th, td,
 div[data-testid="stMarkdownContainer"] * { color:#000033 !important; }
 
-/* ancho máximo centrado (mismo ancho en desktop para todo) */
+/* Ancho máximo centrado (mismo ancho desktop) */
 .gt-section{ max-width:1100px; margin:0 auto; }
 
-/* Card de cabecera */
+/* Card cabecera */
 .soft-card{
   background:#fff; border:1.5px solid #dfe7ef; border-radius:16px;
   padding:18px 20px; box-shadow:0 8px 18px rgba(17,24,39,.07);
@@ -102,7 +104,10 @@ div.stButton > button:hover{ background:#f6f9ff !important; }
   border-radius:16px; background:#eef5ff; color:#000033; padding:14px 16px;
   cursor:pointer; font-size:18px; text-decoration:none; }
 
-/* grids para acciones */
+/* Separadores finos (si usás <hr>) */
+hr{ border:none; border-top:1px solid #ddd; margin:8px 0; }
+
+/* Grids Acciones */
 @media (min-width: 900px){
   .gt-actions-row{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 }
@@ -121,6 +126,7 @@ def init_state():
     st.session_state.setdefault("email","")
     st.session_state.setdefault("telefono","")
     st.session_state.setdefault("pais_origen","China")  # default China
+    st.session_state.setdefault("pais_origen_otro","")
     st.session_state.setdefault("peso_bruto_raw","0.00")
     st.session_state.setdefault("peso_bruto",0.0)
     st.session_state.setdefault("valor_mercaderia_raw","0.00")
@@ -159,7 +165,7 @@ def validate():
     if not st.session_state.telefono.strip(): errs.append("• Teléfono es obligatorio.")
     if not any(p["descripcion"].strip() and p["link"].strip() for p in st.session_state.productos):
         errs.append("• Cargá al menos un producto con descripción y link.")
-    if st.session_state.pais_origen == "Otro" and not st.session_state.get("pais_origen_otro","").strip():
+    if st.session_state.pais_origen == "Otro" and not st.session_state.pais_origen_otro.strip():
         errs.append("• Indicá el país de origen.")
     if not any(
         to_float(r["cant"])>0 and (to_float(r["ancho"])+to_float(r["alto"])+to_float(r["largo"]))>0
@@ -192,18 +198,19 @@ with c2: st.session_state.email = st.text_input("Correo electrónico*", value=st
 with c3: st.session_state.telefono = st.text_input("Teléfono*", value=st.session_state.telefono, placeholder="Ej: 11 5555 5555")
 st.markdown('</div>', unsafe_allow_html=True)
 
-# -------------------- País de origen --------------------
+# -------------------- País de origen (título actualizado) --------------------
 st.markdown('<div class="gt-section">', unsafe_allow_html=True)
-st.subheader("País de origen")
-sel = st.radio("Seleccioná el país de origen:", ["China", "Otro"], index=0 if st.session_state.pais_origen=="China" else 1, horizontal=True)
+st.subheader("País de origen de los productos a cotizar")
+sel = st.radio("Seleccioná el país de origen:", ["China", "Otro"],
+               index=0 if st.session_state.pais_origen=="China" else 1, horizontal=True)
 if sel == "Otro":
     st.session_state.pais_origen = "Otro"
-    st.session_state.pais_origen_otro = st.text_input("Ingresá el país de origen", value=st.session_state.get("pais_origen_otro","")).strip()
+    st.session_state.pais_origen_otro = st.text_input("Ingresá el país de origen", value=st.session_state.pais_origen_otro).strip()
 else:
     st.session_state.pais_origen = "China"
 st.markdown('</div>', unsafe_allow_html=True)
 
-# -------------------- Productos (tarjetas; mismo ancho y placeholders) --------------------
+# -------------------- Productos (tarjetas) --------------------
 st.markdown('<div class="gt-section">', unsafe_allow_html=True)
 st.subheader("Productos")
 st.caption("Cargá descripción y link del/los producto(s). Podés agregar varios.")
@@ -229,6 +236,7 @@ for i, p in enumerate(st.session_state.productos):
     st.markdown('</div>', unsafe_allow_html=True)
 if del_prod_idx is not None:
     st.session_state.productos.pop(del_prod_idx)
+
 st.markdown('<div class="gt-actions-row">', unsafe_allow_html=True)
 pA, pB = st.columns(2)
 with pA: st.button("➕ Agregar producto", on_click=add_producto, use_container_width=True)
@@ -256,6 +264,7 @@ for i, r in enumerate(st.session_state.rows):
     st.markdown('</div>', unsafe_allow_html=True)
 if del_row_idx is not None:
     st.session_state.rows.pop(del_row_idx)
+
 st.markdown('<div class="gt-actions-row">', unsafe_allow_html=True)
 ba, bb = st.columns(2)
 with ba: st.button("➕ Agregar bulto", on_click=add_row, use_container_width=True)
@@ -263,9 +272,9 @@ with bb: st.button("🧹 Vaciar bultos", on_click=clear_rows, use_container_widt
 st.markdown('</div>', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
-# -------------------- Pesos --------------------
+# -------------------- Peso total (título actualizado) --------------------
 st.markdown('<div class="gt-section">', unsafe_allow_html=True)
-st.subheader("Pesos")
+st.subheader("Peso total de los bultos")
 m1, m2 = st.columns([1.2, 1.0])
 with m1:
     st.session_state.peso_bruto_raw = st.text_input(
@@ -278,11 +287,14 @@ peso_aplicable = max(total_peso_vol, st.session_state.peso_bruto)
 with m2:
     st.markdown(f"<div class='gt-pill'><span>Peso aplicable (kg) 🔒</span> <b>{peso_aplicable:,.2f}</b></div>", unsafe_allow_html=True)
     st.caption(f"Se toma el mayor entre peso volumétrico ({total_peso_vol:,.2f}) y peso bruto ({st.session_state.peso_bruto:,.2f}).")
+st.markdown('</div>', unsafe_allow_html=True)
 
-# -------------------- Valor mercadería --------------------
-st.subheader("Valor de la mercadería")
+# -------------------- Valor total (título actualizado) --------------------
+st.markdown('<div class="gt-section">', unsafe_allow_html=True)
+st.subheader("Valor total del pedido")
 st.session_state.valor_mercaderia_raw = st.text_input("Valor total (USD)", value=st.session_state.valor_mercaderia_raw)
 st.session_state.valor_mercaderia = to_float(st.session_state.valor_mercaderia_raw, 0.0)
+st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------- Submit --------------------
 st.write("")
@@ -297,7 +309,7 @@ if submit_clicked:
             {"descripcion": p["descripcion"].strip(), "link": p["link"].strip()}
             for p in st.session_state.productos if p["descripcion"].strip() and p["link"].strip()
         ]
-        pais_final = st.session_state.pais_origen if st.session_state.pais_origen == "China" else st.session_state.get("pais_origen_otro","").strip()
+        pais_final = st.session_state.pais_origen if st.session_state.pais_origen == "China" else st.session_state.pais_origen_otro.strip()
         payload = {
             "timestamp": datetime.utcnow().isoformat(),
             "origen": "streamlit-cotizador",

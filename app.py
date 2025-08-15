@@ -24,16 +24,14 @@ section.main, [data-testid="stHeader"], [data-testid="stSidebar"]{ background:#F
 [data-testid="stHeader"], [data-testid="stToolbar"]{ display:none !important; }
 [data-testid="stAppViewContainer"]{ padding-top:0 !important; }
 section.main{ padding-top:0 !important; }
-
-/* ↓↓↓ Menos padding vertical global ↓↓↓ */
-section.main > div.block-container{ padding-top:.15rem !important; padding-bottom:.6rem !important; }
+/* Menos padding vertical global */
+section.main > div.block-container{ padding-top:.25rem !important; padding-bottom:1rem !important; }
 section.main > div.block-container > div:first-child{ margin-top:0 !important; }
 div[data-testid="stDecoration"], #MainMenu, footer, header { display:none !important; }
 
-/* Tipografía + márgenes más compactos en títulos y párrafos */
-h1,h2,h3,h4,h5,h6{ margin:0 0 6px 0 !important; }
-div[data-testid="stMarkdownContainer"] p,
-div[data-testid="stMarkdownContainer"] small { margin:4px 0 !important; }
+/* Tipografía */
+div, p, span, label, h1,h2,h3,h4,h5,h6, a, small, strong, em, th, td,
+div[data-testid="stMarkdownContainer"] * { color:#000033 !important; }
 
 /* Ancho máximo centrado (desktop) */
 .gt-section{ max-width:1100px; margin:0 auto; }
@@ -41,71 +39,66 @@ div[data-testid="stMarkdownContainer"] small { margin:4px 0 !important; }
 /* Card cabecera (menos padding) */
 .soft-card{
   background:#fff; border:1.5px solid #dfe7ef; border-radius:16px;
-  padding:10px 12px; box-shadow:0 6px 14px rgba(17,24,39,.06);
+  padding:12px 14px; box-shadow:0 6px 14px rgba(17,24,39,.06);
 }
 
 /* Tarjetas internas (menos padding y margen) */
 .gt-card{
   background:#fff; border:1.5px solid #dfe7ef; border-radius:16px;
-  padding:10px; box-shadow:0 6px 14px rgba(17,24,39,.06); margin:4px 0 8px;
+  padding:12px; box-shadow:0 6px 14px rgba(17,24,39,.06); margin:6px 0 10px;
 }
 
-/* Inputs texto (más compactos) */
+/* Inputs texto (menos padding) */
 div[data-testid="stTextInput"] input,
 div[data-testid="stTextArea"] textarea {
   background:#fff !important; color:#000033 !important;
-  border:1.25px solid #dfe7ef !important; border-radius:14px !important;
-  padding:8px 10px !important; box-shadow:none !important;
+  border:1.5px solid #dfe7ef !important; border-radius:16px !important;
+  padding:10px 12px !important; box-shadow:none !important;
 }
 div[data-testid="stTextInput"] input::placeholder,
 div[data-testid="stTextArea"] textarea::placeholder { color:#00003399 !important; }
 
 /* NumberInput (± claro) + menos alto */
 div[data-testid="stNumberInput"] > div{
-  background:#fff !important; border:1.25px solid #dfe7ef !important;
-  border-radius:20px !important; box-shadow:none !important;
+  background:#fff !important; border:1.5px solid #dfe7ef !important;
+  border-radius:22px !important; box-shadow:none !important;
 }
 div[data-testid="stNumberInput"] input{
   background:#fff !important; color:#000033 !important;
-  padding:8px 10px !important; height:38px !important; border:none !important;
+  padding:10px 12px !important; height:42px !important; border:none !important;
 }
 div[data-testid="stNumberInput"] > div > div:nth-child(2){
-  background:#fff !important; border-left:1.25px solid #dfe7ef !important;
-  border-radius:0 20px 20px 0 !important; padding:2px !important;
+  background:#fff !important; border-left:1.5px solid #dfe7ef !important;
+  border-radius:0 22px 22px 0 !important; padding:2px !important;
 }
 div[data-testid="stNumberInput"] button{
   background:#eef3ff !important; color:#000033 !important;
-  border:1px solid #dfe7ef !important; border-radius:10px !important; box-shadow:none !important;
+  border:1px solid #dfe7ef !important; border-radius:12px !important; box-shadow:none !important;
 }
 
 /* Botones */
 div.stButton > button{
   width:100%; background:#ffffff !important; color:#000033 !important;
-  border:1.25px solid #dfe7ef !important; border-radius:14px !important;
-  padding:10px 12px !important; box-shadow:0 6px 14px rgba(17,24,39,.06) !important;
+  border:1.5px solid #dfe7ef !important; border-radius:16px !important;
+  padding:12px 14px !important; box-shadow:0 6px 14px rgba(17,24,39,.06) !important;
 }
 div.stButton > button:hover{ background:#f6f9ff !important; }
 #gt-submit-btn button{ width:100% !important; }
 
-/* Pill peso aplicable (más compacta) */
+/* Pill peso aplicable */
 .gt-pill{
-  display:inline-flex; align-items:center; gap:.5rem;
-  background:#fff; border:1.25px solid #dfe7ef; border-radius:12px;
-  padding:6px 10px; box-shadow:0 6px 14px rgba(17,24,39,.06);
+  display:inline-flex; align-items:center; gap:.6rem;
+  background:#fff; border:1.5px solid #dfe7ef; border-radius:14px;
+  padding:8px 12px; box-shadow:0 6px 14px rgba(17,24,39,.06);
 }
-.gt-pill b{ font-size:16px; }
+.gt-pill b{ font-size:18px; }
 
-/* Separadores ultra finos (simulación sub-px) y con casi nada de margen */
-hr{
-  height:0; border:none; margin:2px 0; padding:0;
-  background:linear-gradient(to right, rgba(0,0,0,0), #dce1e6, rgba(0,0,0,0));
-  /* Para asegurar 0.5px visual en pantallas densas */
-  transform:scaleY(0.5); transform-origin:center;
-}
+/* Separadores finos (reales <hr>) — mucho más fino y con poco margen */
+hr{ border:none; border-top:0.5px solid #dce1e6; margin:4px 0; }
 
 /* Grids Acciones */
 @media (min-width: 900px){
-  .gt-actions-row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .gt-actions-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 }
 @media (max-width: 899px){
   .gt-actions-row{ display:grid; grid-template-columns:1fr; gap:8px; }
@@ -180,7 +173,7 @@ def clear_productos(): st.session_state.productos = [{"descripcion":"", "link":"
 st.markdown("""
 <div class="soft-card gt-section">
   <h2 style="margin:0;">📦 Cotización de Envío por Courier</h2>
-  <p style="margin:2px 0 0;">Completá tus datos, el producto y sus medidas, y te enviamos la cotización por mail.</p>
+  <p style="margin:4px 0 0;">Completá tus datos, el producto y sus medidas, y te enviamos la cotización por mail.</p>
 </div>
 """, unsafe_allow_html=True)
 st.write("")
@@ -216,16 +209,16 @@ del_prod_idx = None
 for i, p in enumerate(st.session_state.productos):
     st.markdown('<div class="gt-card">', unsafe_allow_html=True)
     st.markdown(f"**Producto {i+1}**")
-    pc1, pc2 = st.columns(2)
+    pc1, pc2 = st.columns(2)           # mismo ancho
     with pc1:
         st.session_state.productos[i]["descripcion"] = st.text_area(
             "Descripción*", value=p["descripcion"], key=f"prod_desc_{i}",
-            placeholder='Ej: "Máquina selladora de bolsas"', height=92
+            placeholder='Ej: "Máquina selladora de bolsas"', height=96
         )
     with pc2:
         st.session_state.productos[i]["link"] = st.text_area(
             "Link*", value=p["link"], key=f"prod_link_{i}",
-            placeholder="https://...", height=92
+            placeholder="https://...", height=96
         )
     col_del, _ = st.columns([1,3])
     with col_del:

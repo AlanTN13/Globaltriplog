@@ -24,7 +24,8 @@ section.main, [data-testid="stHeader"], [data-testid="stSidebar"]{ background:#F
 [data-testid="stHeader"], [data-testid="stToolbar"]{ display:none !important; }
 [data-testid="stAppViewContainer"]{ padding-top:0 !important; }
 section.main{ padding-top:0 !important; }
-section.main > div.block-container{ padding-top:.10rem !important; padding-bottom:2rem !important; }
+/* Menos padding vertical global */
+section.main > div.block-container{ padding-top:.25rem !important; padding-bottom:1rem !important; }
 section.main > div.block-container > div:first-child{ margin-top:0 !important; }
 div[data-testid="stDecoration"], #MainMenu, footer, header { display:none !important; }
 
@@ -35,40 +36,40 @@ div[data-testid="stMarkdownContainer"] * { color:#000033 !important; }
 /* Ancho máximo centrado (desktop) */
 .gt-section{ max-width:1100px; margin:0 auto; }
 
-/* Card cabecera */
+/* Card cabecera (menos padding) */
 .soft-card{
   background:#fff; border:1.5px solid #dfe7ef; border-radius:16px;
-  padding:18px 20px; box-shadow:0 8px 18px rgba(17,24,39,.07);
+  padding:12px 14px; box-shadow:0 6px 14px rgba(17,24,39,.06);
 }
 
-/* Tarjetas internas */
+/* Tarjetas internas (menos padding y margen) */
 .gt-card{
   background:#fff; border:1.5px solid #dfe7ef; border-radius:16px;
-  padding:16px; box-shadow:0 6px 16px rgba(17,24,39,.06); margin:10px 0 16px;
+  padding:12px; box-shadow:0 6px 14px rgba(17,24,39,.06); margin:6px 0 10px;
 }
 
-/* Inputs texto */
+/* Inputs texto (menos padding) */
 div[data-testid="stTextInput"] input,
 div[data-testid="stTextArea"] textarea {
   background:#fff !important; color:#000033 !important;
   border:1.5px solid #dfe7ef !important; border-radius:16px !important;
-  padding:14px 16px !important; box-shadow:none !important;
+  padding:10px 12px !important; box-shadow:none !important;
 }
 div[data-testid="stTextInput"] input::placeholder,
 div[data-testid="stTextArea"] textarea::placeholder { color:#00003399 !important; }
 
-/* NumberInput (± claro) */
+/* NumberInput (± claro) + menos alto */
 div[data-testid="stNumberInput"] > div{
   background:#fff !important; border:1.5px solid #dfe7ef !important;
-  border-radius:24px !important; box-shadow:none !important;
+  border-radius:22px !important; box-shadow:none !important;
 }
 div[data-testid="stNumberInput"] input{
   background:#fff !important; color:#000033 !important;
-  padding:14px 16px !important; height:48px !important; border:none !important;
+  padding:10px 12px !important; height:42px !important; border:none !important;
 }
 div[data-testid="stNumberInput"] > div > div:nth-child(2){
   background:#fff !important; border-left:1.5px solid #dfe7ef !important;
-  border-radius:0 24px 24px 0 !important; padding:2px !important;
+  border-radius:0 22px 22px 0 !important; padding:2px !important;
 }
 div[data-testid="stNumberInput"] button{
   background:#eef3ff !important; color:#000033 !important;
@@ -79,28 +80,28 @@ div[data-testid="stNumberInput"] button{
 div.stButton > button{
   width:100%; background:#ffffff !important; color:#000033 !important;
   border:1.5px solid #dfe7ef !important; border-radius:16px !important;
-  padding:14px 18px !important; box-shadow:0 6px 16px rgba(17,24,39,.06) !important;
+  padding:12px 14px !important; box-shadow:0 6px 14px rgba(17,24,39,.06) !important;
 }
 div.stButton > button:hover{ background:#f6f9ff !important; }
 #gt-submit-btn button{ width:100% !important; }
 
 /* Pill peso aplicable */
 .gt-pill{
-  display:inline-flex; align-items:center; gap:.75rem;
+  display:inline-flex; align-items:center; gap:.6rem;
   background:#fff; border:1.5px solid #dfe7ef; border-radius:14px;
-  padding:10px 14px; box-shadow:0 6px 16px rgba(17,24,39,.06);
+  padding:8px 12px; box-shadow:0 6px 14px rgba(17,24,39,.06);
 }
 .gt-pill b{ font-size:18px; }
 
-/* Separadores finos (reales <hr>) */
-hr{ border:none; border-top:1px solid #dce1e6; margin:8px 0; }
+/* Separadores finos (reales <hr>) — mucho más fino y con poco margen */
+hr{ border:none; border-top:0.5px solid #dce1e6; margin:4px 0; }
 
 /* Grids Acciones */
 @media (min-width: 900px){
-  .gt-actions-row{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .gt-actions-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 }
 @media (max-width: 899px){
-  .gt-actions-row{ display:grid; grid-template-columns:1fr; gap:12px; }
+  .gt-actions-row{ display:grid; grid-template-columns:1fr; gap:8px; }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -172,7 +173,7 @@ def clear_productos(): st.session_state.productos = [{"descripcion":"", "link":"
 st.markdown("""
 <div class="soft-card gt-section">
   <h2 style="margin:0;">📦 Cotización de Envío por Courier</h2>
-  <p style="margin:6px 0 0;">Completá tus datos, el producto y sus medidas, y te enviamos la cotización por mail.</p>
+  <p style="margin:4px 0 0;">Completá tus datos, el producto y sus medidas, y te enviamos la cotización por mail.</p>
 </div>
 """, unsafe_allow_html=True)
 st.write("")
@@ -212,12 +213,12 @@ for i, p in enumerate(st.session_state.productos):
     with pc1:
         st.session_state.productos[i]["descripcion"] = st.text_area(
             "Descripción*", value=p["descripcion"], key=f"prod_desc_{i}",
-            placeholder='Ej: "Máquina selladora de bolsas"', height=100
+            placeholder='Ej: "Máquina selladora de bolsas"', height=96
         )
     with pc2:
         st.session_state.productos[i]["link"] = st.text_area(
             "Link*", value=p["link"], key=f"prod_link_{i}",
-            placeholder="https://...", height=100
+            placeholder="https://...", height=96
         )
     col_del, _ = st.columns([1,3])
     with col_del:

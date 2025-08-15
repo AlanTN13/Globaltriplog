@@ -25,15 +25,15 @@ section.main, [data-testid="stHeader"], [data-testid="stSidebar"]{
 }
 
 /* Quitar todo el espacio superior: pegamos el contenido arriba */
-:root{ --header-height:0px !important; }                 /* anula altura reservada */
-[data-testid="stHeader"]{ display:none !important; }      /* oculta header */
-[data-testid="stToolbar"]{ display:none !important; }     /* oculta toolbar */
+:root{ --header-height:0px !important; }
+[data-testid="stHeader"]{ display:none !important; }
+[data-testid="stToolbar"]{ display:none !important; }
 [data-testid="stAppViewContainer"]{ padding-top:0 !important; }
 section.main{ padding-top:0 !important; }
 
 /* contenedor principal con el mínimo padding posible */
-section.main > div.block-container{ 
-  padding-top:.10rem !important; 
+section.main > div.block-container{
+  padding-top:.10rem !important;
   padding-bottom:2rem !important;
 }
 
@@ -132,12 +132,12 @@ div.stButton > button:hover{ background:#f6f9ff !important; }
   border-radius:16px; background:#eef5ff; color:#000033; padding:14px 16px;
   cursor:pointer; font-size:18px; text-decoration:none; }
 
-/* Acciones de bultos: fila en desktop, apiladas en mobile */
+/* Acciones de bultos/productos: fila en desktop, apiladas en mobile */
 @media (min-width: 900px){
-  .gt-bultos-actions{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+  .gt-bultos-actions, .gt-productos-actions{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
 }
 @media (max-width: 899px){
-  .gt-bultos-actions{ display:grid; grid-template-columns:1fr; gap:12px; }
+  .gt-bultos-actions, .gt-productos-actions{ display:grid; grid-template-columns:1fr; gap:12px; }
 }
 
 /* Mobile tweaks */
@@ -153,12 +153,11 @@ FACTOR_VOL = 5000
 
 def init_state():
     st.session_state.setdefault("rows", [{"cant":0, "ancho":0, "alto":0, "largo":0}])
+    st.session_state.setdefault("productos", [{"descripcion":"", "link":""}])
     st.session_state.setdefault("nombre","")
     st.session_state.setdefault("email","")
     st.session_state.setdefault("telefono","")
     st.session_state.setdefault("es_cliente","No")
-    st.session_state.setdefault("descripcion","")
-    st.session_state.setdefault("link","")
     st.session_state.setdefault("peso_bruto_raw","0.00")
     st.session_state.setdefault("peso_bruto",0.0)
     st.session_state.setdefault("valor_mercaderia_raw","0.00")
@@ -184,8 +183,8 @@ _qs = get_qs()
 if _qs.get("gt","") == "reset":
     st.session_state.update({
         "rows":[{"cant":0, "ancho":0, "alto":0, "largo":0}],
+        "productos":[{"descripcion":"", "link":""}],
         "nombre":"", "email":"", "telefono":"", "es_cliente":"No",
-        "descripcion":"", "link":"",
         "peso_bruto_raw":"0.00", "peso_bruto":0.0,
         "valor_mercaderia_raw":"0.00", "valor_mercaderia":0.0,
         "show_dialog": False, "form_errors":[]
@@ -225,8 +224,16 @@ def validate():
     if not st.session_state.nombre.strip(): errs.append("• Nombre es obligatorio.")
     if not st.session_state.email.strip() or "@" not in st.session_state.email: errs.append("• Email válido es obligatorio.")
     if not st.session_state.telefono.strip(): errs.append("• Teléfono es obligatorio.")
-    if not st.session_state.descripcion.strip(): errs.append("• Descripción del producto es obligatoria.")
-    if not st.session_state.link.strip(): errs.append("• Link del producto/ficha técnica es obligatorio.")
+
+    # Productos: al menos uno con descripción y link
+    prod_validos = [
+        p for p in st.session_state.productos
+        if p["descripcion"].strip() and p["link"].strip()
+    ]
+    if not prod_validos:
+        errs.append("• Cargá al menos **un producto** con **descripción** y **link**.")
+
+    # Bultos: al menos uno con cantidad y medidas
     hay_medidas = any(
         to_float(r["cant"])>0 and (to_float(r["ancho"])+to_float(r["alto"])+to_float(r["largo"]))>0
         for r in st.session_state.rows
@@ -245,6 +252,16 @@ def remove_last():
     if len(st.session_state.rows) > 1:
         st.session_state.rows.pop()
 
+def add_producto():
+    st.session_state.productos.append({"descripcion":"", "link":""})
+
+def clear_productos():
+    st.session_state.productos = [{"descripcion":"", "link":""}]
+
+def remove_last_producto():
+    if len(st.session_state.productos) > 1:
+        st.session_state.productos.pop()
+
 # -------------------- UI --------------------
 st.markdown("""
 <div class="soft-card">
@@ -254,7 +271,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 st.write("")
 
-st.subheader("Datos de contacto y del producto")
+st.subheader("Datos de contacto")
 c1,c2,c3,c4 = st.columns([1.1,1.1,1.0,0.9])
 with c1:
     st.session_state.nombre = st.text_input("Nombre completo*", value=st.session_state.nombre,
@@ -269,16 +286,42 @@ with c4:
     st.session_state.es_cliente = st.radio("¿Cliente/alumno de Global Trip?", ["No","Sí"],
                                            index=0 if st.session_state.es_cliente=="No" else 1, horizontal=True)
 
-st.session_state.descripcion = st.text_area("Descripción del producto*", value=st.session_state.descripcion,
-                                            placeholder='Ej: "Máquina selladora de bolsas"')
-st.session_state.link = st.text_input("Link del producto o ficha técnica (Alibaba, Amazon, etc.)*",
-                                      value=st.session_state.link, placeholder="https://...")
+# -------------------- Productos (bloque dinámico) --------------------
+st.write("")
+st.subheader("Productos")
+st.caption("Cargá **descripción** y **link** del/los producto(s). Podés agregar varios.")
 
+for i, p in enumerate(st.session_state.productos):
+    st.markdown(f"**Producto {i+1}**")
+    pc1, pc2 = st.columns([1.2, 1.0])
+    with pc1:
+        st.session_state.productos[i]["descripcion"] = st.text_area(
+            "Descripción del producto*", value=p["descripcion"], key=f"prod_desc_{i}",
+            placeholder='Ej: "Máquina selladora de bolsas"'
+        )
+    with pc2:
+        st.session_state.productos[i]["link"] = st.text_input(
+            "Link del producto o ficha técnica (Alibaba, Amazon, etc.)*",
+            value=p["link"], key=f"prod_link_{i}", placeholder="https://..."
+        )
+
+# Acciones productos
+st.markdown('<div class="gt-productos-actions">', unsafe_allow_html=True)
+pA, pB, pC = st.columns(3)
+with pA:
+    st.button("➕ Agregar producto", use_container_width=True, on_click=add_producto)
+with pB:
+    st.button("🧹 Vaciar productos", use_container_width=True, on_click=clear_productos)
+with pC:
+    st.button("🗑️ Eliminar último producto", use_container_width=True,
+              on_click=remove_last_producto, disabled=(len(st.session_state.productos) <= 1))
+st.markdown('</div>', unsafe_allow_html=True)
+
+# -------------------- Bultos --------------------
 st.write("")
 st.subheader("Bultos")
 st.caption("Cargá por bulto: **cantidad** y **dimensiones en cm** así calculamos el **peso volumétrico**.")
 
-# Filas de bultos (labels sobre cada input)
 for i, r in enumerate(st.session_state.rows):
     cols = st.columns([0.9, 1, 1, 1])
     with cols[0]:
@@ -294,7 +337,6 @@ for i, r in enumerate(st.session_state.rows):
         st.session_state.rows[i]["largo"] = st.number_input("Largo (cm)", min_value=0.0, step=1.0,
                                                             value=float(r["largo"]), key=f"lar_{i}")
 
-# Acciones (desktop en fila; mobile apiladas)
 st.markdown('<div class="gt-bultos-actions">', unsafe_allow_html=True)
 cA, cB, cC = st.columns(3)
 with cA:
@@ -306,7 +348,7 @@ with cC:
               on_click=remove_last, disabled=(len(st.session_state.rows) <= 1))
 st.markdown('</div>', unsafe_allow_html=True)
 
-# Pesos (unificamos en un solo dato: Peso aplicable)
+# -------------------- Pesos --------------------
 st.write("")
 st.subheader("Pesos")
 m1, m2 = st.columns([1.2, 1.0])
@@ -328,14 +370,14 @@ with m2:
     """, unsafe_allow_html=True)
     st.caption(f"Se toma el mayor entre peso volumétrico ({total_peso_vol:,.2f}) y peso bruto ({st.session_state.peso_bruto:,.2f}).")
 
-# Valor mercadería
+# -------------------- Valor mercadería --------------------
 st.subheader("Valor de la mercadería")
 st.session_state.valor_mercaderia_raw = st.text_input(
     "Valor de la mercadería total (USD)", value=st.session_state.valor_mercaderia_raw
 )
 st.session_state.valor_mercaderia = to_float(st.session_state.valor_mercaderia_raw, 0.0)
 
-# Submit
+# -------------------- Submit --------------------
 st.write("")
 st.markdown('<div id="gt-submit-btn">', unsafe_allow_html=True)
 submit_clicked = st.button("📨 Solicitar cotización", use_container_width=True, key="gt_submit_btn")
@@ -344,6 +386,14 @@ st.markdown('</div>', unsafe_allow_html=True)
 if submit_clicked:
     st.session_state.form_errors = validate()
     if not st.session_state.form_errors:
+        # Compatibilidad: resumen simple del primer producto y lista completa
+        productos_validos = [
+            {"descripcion": p["descripcion"].strip(), "link": p["link"].strip()}
+            for p in st.session_state.productos
+            if p["descripcion"].strip() and p["link"].strip()
+        ]
+        producto_resumen = productos_validos[0]["descripcion"] if productos_validos else ""
+
         payload = {
             "timestamp": datetime.utcnow().isoformat(),
             "origen": "streamlit-cotizador",
@@ -354,10 +404,10 @@ if submit_clicked:
                 "telefono": st.session_state.telefono.strip(),
                 "es_cliente": st.session_state.es_cliente
             },
-            "producto": {
-                "descripcion": st.session_state.descripcion.strip(),
-                "link": st.session_state.link.strip()
-            },
+            # NUEVO
+            "productos": productos_validos,
+            # LEGADO (por si tu flujo esperaba un único campo)
+            "producto_resumen": producto_resumen,
             "bultos": st.session_state.rows,
             "pesos": {
                 "volumetrico_kg": total_peso_vol,
@@ -370,11 +420,11 @@ if submit_clicked:
         except: pass
         st.session_state.show_dialog = True
 
-# Errores
+# -------------------- Errores --------------------
 if st.session_state.form_errors:
     st.error("Revisá estos puntos:\n\n" + "\n".join(st.session_state.form_errors))
 
-# Popup post-submit sin iframe/JS
+# -------------------- Popup post-submit --------------------
 if st.session_state.get("show_dialog", False):
     email = (st.session_state.email or "").strip()
     email_html = f"<a href='mailto:{email}'>{email}</a>" if email else "tu correo"

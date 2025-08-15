@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# -------------------- Estilos (coherencia visual) --------------------
+# -------------------- Estilos (coherencia + espacios mínimos) --------------------
 st.markdown("""
 <style>
 /* ===== Design tokens ===== */
@@ -36,7 +36,7 @@ div[data-testid="stDecoration"]{ display:none !important; }
 html, body, .stApp, [data-testid="stAppViewContainer"], section.main{ background:var(--bg) !important; color:var(--ink) !important; }
 [data-testid="stAppViewContainer"]{ padding-top:0 !important; }
 section.main{ padding-top:0 !important; }
-section.main > div.block-container{ padding-top:var(--s0) !important; padding-bottom:var(--s3) !important; }
+section.main > div.block-container{ padding-top:var(--s0) !important; padding-bottom:var(--s2) !important; }
 
 /* tipografía y márgenes consistentes */
 h1,h2,h3,h4,h5,h6{ color:var(--ink) !important; margin:var(--s0) 0 var(--s0) 0 !important; }
@@ -48,7 +48,7 @@ p, label, small, span{ color:var(--ink) !important; margin:0 !important; }
 .soft-card{
   background:var(--bg); border:1.5px solid var(--border); border-radius:var(--radius);
   padding:var(--s2); box-shadow:0 8px 18px rgba(17,24,39,.07);
-  margin:var(--s2) 0 var(--s2);
+  margin:var(--s1) 0 var(--s1);
 }
 .gt-card{
   background:var(--bg); border:1.5px solid var(--border); border-radius:var(--radius);
@@ -56,9 +56,9 @@ p, label, small, span{ color:var(--ink) !important; margin:0 !important; }
   margin:var(--s1) 0 var(--s1);
 }
 
-/* separar bloques y columnas con el mismo gap */
-div[data-testid="stVerticalBlock"]{ gap:var(--s2) !important; }
-div[data-testid="stHorizontalBlock"]{ gap:var(--s2) !important; }
+/* separar bloques y columnas con el mismo gap (más chico) */
+div[data-testid="stVerticalBlock"]{ gap:var(--s1) !important; }
+div[data-testid="stHorizontalBlock"]{ gap:var(--s1) !important; }
 div[data-testid="column"]{ padding:0 !important; }
 
 /* ===== Inputs ===== */
@@ -102,6 +102,7 @@ div.stButton > button:hover{ background:#eef3ff !important; }
 /* ===== Elementos utilitarios ===== */
 hr{ border:none; border-top:1px solid var(--border); margin:var(--s1) 0; }
 
+/* Pill compacta */
 .gt-pill{
   display:inline-flex; align-items:center; gap:var(--s0);
   background:var(--bg); border:1.5px solid var(--border); border-radius:12px;
@@ -109,8 +110,20 @@ hr{ border:none; border-top:1px solid var(--border); margin:var(--s1) 0; }
 }
 
 /* ===== Filas de acciones (Agregar/Vaciar) ===== */
-.gt-actions-row{ display:grid; grid-template-columns:1fr 1fr; gap:var(--s2); margin-top:var(--s1); }
+.gt-actions-row{ display:grid; grid-template-columns:1fr 1fr; gap:var(--s1); margin-top:var(--s1); }
 @media (max-width: 899px){ .gt-actions-row{ grid-template-columns:1fr; } }
+
+/* ===== Ajustes finos para eliminar huecos grandes ===== */
+.stMarkdown h2, h2{ margin-bottom:4px !important; }       /* menos espacio bajo subtítulo */
+.stCaption{ margin-top:0 !important; margin-bottom:8px !important; } /* caption pegado al contenido */
+
+/* Separador dentro de cada sección: más corto y centrado */
+.gt-section hr{
+  width:72%;
+  max-width:72%;
+  border-top:1px solid var(--border);
+  margin:8px auto !important; /* centrado y con poco margen */
+}
 </style>
 """, unsafe_allow_html=True)
 

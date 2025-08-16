@@ -12,13 +12,13 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# -------------------- Estilos (más aire entre bloques) --------------------
+# -------------------- Estilos (compacto y limpio) --------------------
 st.markdown("""
 <style>
 :root{
   --ink:#0e1b3d; --muted:#6b7280; --bg:#fff; --border:#e6ebf3;
   --shadow:0 6px 16px rgba(17,24,39,.06); --radius:14px;
-  --s0:8px; --s1:12px; --s2:16px; --s3:20px; --s4:28px;
+  --s0:6px; --s1:8px; --s2:12px; --s3:16px;
 }
 
 /* Reset & layout base */
@@ -28,31 +28,32 @@ html, body, .stApp, [data-testid="stAppViewContainer"], section.main{
   background:var(--bg) !important; color:var(--ink) !important;
 }
 section.main > div.block-container{
-  padding-top:10px !important; padding-bottom:var(--s3) !important;
+  padding-top:8px !important; padding-bottom:var(--s3) !important;
 }
 
 /* Tipografía y márgenes */
 h1,h2,h3,h4,h5,h6{ margin:8px 0 6px !important; color:var(--ink) !important; }
-.stCaption{ margin:0 0 10px !important; color:var(--muted) !important; }
-label, .st-emotion-cache-1wbqy5l, .st-emotion-cache-0 { margin-bottom:6px !important; }
+.stCaption{ margin:0 0 6px !important; color:var(--muted) !important; }
+label{ margin-bottom:4px !important; }
 
 /* Secciones y tarjetas */
 .gt-section{ max-width:1100px; margin:0 auto; }
 .soft-card{
   background:#fff; border:1.5px solid var(--border); border-radius:var(--radius);
-  padding:var(--s2); box-shadow:0 8px 18px rgba(17,24,39,.07); margin:14px 0 var(--s3);
+  padding:var(--s2); box-shadow:0 8px 18px rgba(17,24,39,.07);
+  margin:10px 0 var(--s3);
 }
 .gt-card{
   background:#fff; border:1.5px solid var(--border); border-radius:var(--radius);
-  padding:12px 14px !important;               /* + padding interno */
+  padding:10px 12px !important;
   box-shadow:var(--shadow);
-  margin:14px 0 !important;                   /* + separación entre tarjetas */
+  margin:10px 0 !important;
 }
-.gt-actions-row{ margin:8px 0 var(--s3) !important; }
+.gt-actions-row{ margin:6px 0 12px !important; }
 
-/* Gaps consistentes (más aire) */
-div[data-testid="stVerticalBlock"]{ gap:14px !important; }
-div[data-testid="stHorizontalBlock"]{ gap:14px !important; }
+/* Gaps consistentes (compacto) */
+div[data-testid="stVerticalBlock"]{ gap:8px !important; }
+div[data-testid="stHorizontalBlock"]{ gap:10px !important; }
 div[data-testid="column"]{ padding:0 !important; }
 
 /* Inputs */
@@ -60,13 +61,13 @@ div[data-testid="stTextInput"] input,
 div[data-testid="stTextArea"] textarea{
   background:#fff !important; color:var(--ink) !important;
   border:1.5px solid var(--border) !important; border-radius:var(--radius) !important;
-  padding:12px var(--s2) !important; box-shadow:none !important;
+  padding:10px var(--s2) !important; box-shadow:none !important;
 }
 div[data-testid="stTextInput"] input::placeholder,
 div[data-testid="stTextArea"] textarea::placeholder{ color:#94a3b8 !important; }
 
-/* TextArea altura cómoda */
-textarea{ min-height:96px !important; }
+/* TextArea altura mínima */
+textarea{ min-height:80px !important; }
 
 /* NumberInput (misma altura) */
 div[data-testid="stNumberInput"] > div{
@@ -75,7 +76,7 @@ div[data-testid="stNumberInput"] > div{
 }
 div[data-testid="stNumberInput"] input{
   background:#fff !important; color:var(--ink) !important;
-  height:44px !important; padding:0 var(--s2) !important; border:none !important;
+  height:42px !important; padding:0 var(--s2) !important; border:none !important;
 }
 div[data-testid="stNumberInput"] > div > div:nth-child(2){
   background:#fff !important; border-left:1.5px solid var(--border) !important;
@@ -91,7 +92,7 @@ div.stButton{ margin:0 !important; }
 div.stButton > button{
   width:100%; background:#f7faff !important; color:var(--ink) !important;
   border:1.5px solid var(--border) !important; border-radius:var(--radius) !important;
-  padding:12px var(--s2) !important; box-shadow:var(--shadow) !important;
+  padding:10px var(--s2) !important; box-shadow:var(--shadow) !important;
 }
 div.stButton > button:hover{ background:#eef3ff !important; }
 #gt-submit-btn button{ width:100% !important; }
@@ -100,21 +101,21 @@ div.stButton > button:hover{ background:#eef3ff !important; }
 .gt-pill{
   display:inline-flex; align-items:center; gap:8px;
   background:#fff; border:1.5px solid var(--border); border-radius:12px;
-  padding:10px 14px; box-shadow:var(--shadow);
+  padding:10px 12px; box-shadow:var(--shadow);
 }
 
 /* Radios (China / Otro) */
-[data-testid="stRadio"]{ margin-top:6px !important; margin-bottom:10px !important; }
-[data-testid="stRadio"] > label{ color:var(--muted) !important; font-weight:500 !important; margin-bottom:6px !important; }
-[data-testid="stRadio"] div[role="radiogroup"]{ display:flex !important; align-items:center !important; gap:16px !important; }
+[data-testid="stRadio"]{ margin-top:4px !important; margin-bottom:8px !important; }
+[data-testid="stRadio"] > label{ color:var(--muted) !important; font-weight:500 !important; margin-bottom:4px !important; }
+[data-testid="stRadio"] div[role="radiogroup"]{ display:flex !important; align-items:center !important; gap:12px !important; }
 [data-testid="stRadio"] label p{ margin:0 !important; font-size:0.95rem !important; color:var(--ink) !important; }
-[data-testid="stRadio"] input[type="radio"]{ transform: scale(0.95); accent-color:#0e1b3d; }
+[data-testid="stRadio"] input[type="radio"]{ transform:scale(0.9); accent-color:#0e1b3d; }
 
 /* Separadores sutiles entre grandes bloques */
-.gt-sep{ height:18px; }
-.gt-sep-lg{ height:26px; }
+.gt-sep{ height:6px; }
+.gt-sep-lg{ height:10px; }
 
-/* Estilos mínimos para el popup (por si no estaban) */
+/* Popup */
 .gt-overlay{
   position:fixed; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; z-index:9999;
 }
@@ -241,12 +242,12 @@ for i, p in enumerate(st.session_state.productos):
     with pc1:
         st.session_state.productos[i]["descripcion"] = st.text_area(
             "Descripción*", value=p["descripcion"], key=f"prod_desc_{i}",
-            placeholder='Ej: "Máquina selladora de bolsas"', height=96
+            placeholder='Ej: "Máquina selladora de bolsas"', height=80
         )
     with pc2:
         st.session_state.productos[i]["link"] = st.text_area(
             "Link*", value=p["link"], key=f"prod_link_{i}",
-            placeholder="https://...", height=96
+            placeholder="https://...", height=80
         )
     col_del, _ = st.columns([1,3])
     with col_del:

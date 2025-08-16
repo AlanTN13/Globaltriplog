@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# -------------------- Estilos (compacto y limpio) --------------------
+# -------------------- Estilos --------------------
 st.markdown("""
 <style>
 :root{
@@ -20,17 +20,15 @@ st.markdown("""
   --s0:6px; --s1:8px; --s2:12px; --s3:16px;
 }
 
-/* Reset & layout base */
+/* Reset & layout */
 [data-testid="stHeader"], [data-testid="stToolbar"], #MainMenu, footer, header,
 div[data-testid="stDecoration"]{ display:none !important; }
 html, body, .stApp, [data-testid="stAppViewContainer"], section.main{
   background:var(--bg) !important; color:var(--ink) !important;
 }
-section.main > div.block-container{
-  padding-top:8px !important; padding-bottom:var(--s3) !important;
-}
+section.main > div.block-container{ padding-top:8px !important; padding-bottom:var(--s3) !important; }
 
-/* Tipografía y márgenes */
+/* Tipografía */
 h1,h2,h3,h4,h5,h6{ margin:8px 0 6px !important; color:var(--ink) !important; }
 .stCaption{ margin:0 0 6px !important; color:var(--muted) !important; }
 label{ margin-bottom:4px !important; }
@@ -39,18 +37,21 @@ label{ margin-bottom:4px !important; }
 .gt-section{ max-width:1100px; margin:0 auto; }
 .soft-card{
   background:#fff; border:1.5px solid var(--border); border-radius:var(--radius);
-  padding:var(--s2); box-shadow:0 8px 18px rgba(17,24,39,.07);
-  margin:10px 0 var(--s3);
+  padding:var(--s2); box-shadow:0 8px 18px rgba(17,24,39,.07); margin:10px 0 var(--s3);
 }
 .gt-card{
   background:#fff; border:1.5px solid var(--border); border-radius:var(--radius);
-  padding:10px 12px !important;
-  box-shadow:var(--shadow);
-  margin:10px 0 !important;
+  padding:10px 12px !important; box-shadow:var(--shadow); margin:10px 0 !important;
 }
-.gt-actions-row{ margin:6px 0 12px !important; }
 
-/* Gaps consistentes (compacto) */
+/* Divider sutil (reemplaza “bloques vacíos”) */
+.gt-divider{
+  height:1px; width:100%; margin:14px 0 18px;
+  background:linear-gradient(90deg, rgba(14,27,61,.08), rgba(14,27,61,.03), rgba(14,27,61,.08));
+  border-radius:1px;
+}
+
+/* Gaps */
 div[data-testid="stVerticalBlock"]{ gap:8px !important; }
 div[data-testid="stHorizontalBlock"]{ gap:10px !important; }
 div[data-testid="column"]{ padding:0 !important; }
@@ -64,26 +65,21 @@ div[data-testid="stTextArea"] textarea{
 }
 div[data-testid="stTextInput"] input::placeholder,
 div[data-testid="stTextArea"] textarea::placeholder{ color:#94a3b8 !important; }
-
-/* TextArea altura mínima */
 textarea{ min-height:80px !important; }
 
-/* NumberInput (misma altura) */
+/* NumberInput */
 div[data-testid="stNumberInput"] > div{
-  background:#fff !important; border:1.5px solid var(--border) !important;
-  border-radius:24px !important; box-shadow:none !important;
+  background:#fff !important; border:1.5px solid var(--border) !important; border-radius:24px !important; box-shadow:none !important;
 }
 div[data-testid="stNumberInput"] input{
-  background:#fff !important; color:var(--ink) !important;
-  height:42px !important; padding:0 var(--s2) !important; border:none !important;
+  background:#fff !important; color:var(--ink) !important; height:42px !important; padding:0 var(--s2) !important; border:none !important;
 }
 div[data-testid="stNumberInput"] > div > div:nth-child(2){
-  background:#fff !important; border-left:1.5px solid var(--border) !important;
-  border-radius:0 24px 24px 0 !important; padding:2px !important;
+  background:#fff !important; border-left:1.5px solid var(--border) !important; border-radius:0 24px 24px 0 !important; padding:2px !important;
 }
 div[data-testid="stNumberInput"] button{
-  background:#eef3ff !important; color:var(--ink) !important;
-  border:1px solid var(--border) !important; border-radius:10px !important; box-shadow:none !important;
+  background:#eef3ff !important; color:var(--ink) !important; border:1px solid var(--border) !important;
+  border-radius:10px !important; box-shadow:none !important;
 }
 
 /* Botones */
@@ -96,71 +92,53 @@ div.stButton > button{
 div.stButton > button:hover{ background:#eef3ff !important; }
 #gt-submit-btn button{ width:100% !important; }
 
-/* Pills/resumenes */
+/* Pills/resúmenes */
 .gt-pill{
   display:inline-flex; align-items:center; gap:8px;
   background:#fff; border:1.5px solid var(--border); border-radius:12px;
-  padding:10px 12px; box-shadow:var(--shadow);
-  margin-bottom:6px !important;
+  padding:10px 12px; box-shadow:var(--shadow); margin-bottom:6px !important;
 }
 
-/* Radios (China / Otro) */
+/* Radios */
 [data-testid="stRadio"]{ margin-top:4px !important; margin-bottom:8px !important; }
 [data-testid="stRadio"] > label{ color:var(--muted) !important; font-weight:500 !important; margin-bottom:4px !important; }
 [data-testid="stRadio"] div[role="radiogroup"]{ display:flex !important; align-items:center !important; gap:12px !important; }
 [data-testid="stRadio"] label p{ margin:0 !important; font-size:0.95rem !important; color:var(--ink) !important; }
 [data-testid="stRadio"] input[type="radio"]{ transform:scale(0.9); accent-color:#0e1b3d; }
 
-/* Separadores sutiles entre grandes bloques */
-.gt-sep{ height:6px; }
-.gt-sep-lg{ height:10px; }
-
-/* ===== Popup (refactor bonito) ===== */
+/* ===== Popup estilo “ligero” (como tu segunda imagen) ===== */
 .gt-overlay{
-  position:fixed; inset:0;
-  background:rgba(14,27,61,.45);
-  backdrop-filter: blur(3px);
-  display:flex; align-items:center; justify-content:center;
-  z-index:9999;
+  position:fixed; inset:0; background:rgba(14,27,61,.45);
+  backdrop-filter: blur(2.5px);
+  display:flex; align-items:center; justify-content:center; z-index:9999;
 }
 .gt-modal{
-  position:relative;
-  width:min(560px, 92vw);
-  background:#fff;
-  border:1px solid #e8eef7;
-  border-radius:20px;
-  box-shadow:0 18px 60px rgba(14,27,61,.12);
-  padding:24px;
-  animation: gt-pop .18s ease-out;
+  position:relative; width:min(720px, 94vw);
+  background:#fff; border:1px solid #e8eef7; border-radius:24px;
+  box-shadow:0 20px 65px rgba(14,27,61,.14); padding:24px 28px;
+  animation:gt-pop .18s ease-out;
 }
-.gt-head{ display:flex; align-items:center; gap:12px; margin-bottom:6px; }
-.gt-badge{
-  width:44px; height:44px; border-radius:12px;
-  background:#eef3ff; color:#0e1b3d; display:grid; place-items:center;
-  font-size:22px; font-weight:700;
-}
-.gt-title{ margin:0; font-size:26px; color:var(--ink); }
-
-.gt-body{ margin-top:6px; }
-.gt-body p{ margin:8px 0; color:#1f2a44; line-height:1.5; }
+.gt-title{ margin:0 0 8px !important; font-size:30px; color:var(--ink); }
+.gt-body p{ margin:10px 0; color:#1f2a44; line-height:1.55; }
 .gt-body a{ color:#2563eb; text-decoration:underline; }
 
-.gt-actions{ display:flex; gap:12px; margin-top:16px; flex-wrap:wrap; }
+/* Acciones livianas */
+.gt-actions{ display:flex; gap:14px; margin-top:18px; flex-wrap:wrap; }
 .gt-btn{
   display:inline-flex; align-items:center; gap:8px;
-  padding:12px 16px; border-radius:12px;
-  border:1.5px solid #d9e4ff; background:#f7faff; color:#0e1b3d;
-  text-decoration:none; font-weight:600;
+  padding:14px 18px; border-radius:16px;
+  background:#edf3ff; border:1.5px solid #cfe0ff; color:#0e1b3d;
+  text-decoration:underline; font-weight:600;
 }
-.gt-btn:hover{ background:#eef3ff; }
-.gt-btn.primary{ background:#0e1b3d; color:#fff; border-color:#0e1b3d; }
-.gt-btn.primary:hover{ filter:brightness(1.05); }
+.gt-btn:hover{ background:#e7efff; }
+.gt-btn.secondary{ background:#f6f8ff; border-color:#dbe6ff; }
 
+/* Botón X */
 .gt-close{
-  position:absolute; top:12px; right:12px;
-  width:36px; height:36px; border-radius:10px;
+  position:absolute; top:14px; right:14px;
+  width:40px; height:40px; border-radius:12px;
   display:grid; place-items:center;
-  background:#f7faff; border:1px solid #e8eef7; color:#0e1b3d; text-decoration:none;
+  background:#f6f8ff; border:1px solid #dbe6ff; color:#2a6ae6; text-decoration:none; font-size:20px;
 }
 .gt-close:hover{ background:#eef3ff; }
 
@@ -169,9 +147,8 @@ div.stButton > button:hover{ background:#eef3ff !important; }
 /* Labels de inputs visibles */
 div[data-testid="stTextInput"] label,
 div[data-testid="stNumberInput"] label,
-div[data-testid="stTextArea"] label {
-  color: var(--ink) !important;
-  font-weight: 600 !important;
+div[data-testid="stTextArea"] label{
+  color:var(--ink) !important; font-weight:600 !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -257,7 +234,8 @@ with c1: st.session_state.nombre = st.text_input("Nombre completo*", value=st.se
 with c2: st.session_state.email = st.text_input("Correo electrónico*", value=st.session_state.email, placeholder="ejemplo@email.com")
 with c3: st.session_state.telefono = st.text_input("Teléfono*", value=st.session_state.telefono, placeholder="Ej: 11 5555 5555")
 st.markdown('</div>', unsafe_allow_html=True)
-st.markdown('<div class="gt-sep-lg"></div>', unsafe_allow_html=True)
+
+st.markdown('<div class="gt-section"><div class="gt-divider"></div></div>', unsafe_allow_html=True)
 
 # -------------------- País de origen --------------------
 st.markdown('<div class="gt-section">', unsafe_allow_html=True)
@@ -270,7 +248,8 @@ if sel == "Otro":
 else:
     st.session_state.pais_origen = "China"
 st.markdown('</div>', unsafe_allow_html=True)
-st.markdown('<div class="gt-sep-lg"></div>', unsafe_allow_html=True)
+
+st.markdown('<div class="gt-section"><div class="gt-divider"></div></div>', unsafe_allow_html=True)
 
 # -------------------- Productos --------------------
 st.markdown('<div class="gt-section">', unsafe_allow_html=True)
@@ -306,7 +285,8 @@ with pA: st.button("➕ Agregar producto", on_click=add_producto, use_container_
 with pB: st.button("🧹 Vaciar productos", on_click=clear_productos, use_container_width=True)
 st.markdown('</div>', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
-st.markdown('<div class="gt-sep-lg"></div>', unsafe_allow_html=True)
+
+st.markdown('<div class="gt-section"><div class="gt-divider"></div></div>', unsafe_allow_html=True)
 
 # -------------------- Bultos --------------------
 st.markdown('<div class="gt-section">', unsafe_allow_html=True)
@@ -336,7 +316,8 @@ with ba: st.button("➕ Agregar bulto", on_click=add_row, use_container_width=Tr
 with bb: st.button("🧹 Vaciar bultos", on_click=clear_rows, use_container_width=True)
 st.markdown('</div>', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
-st.markdown('<div class="gt-sep-lg"></div>', unsafe_allow_html=True)
+
+st.markdown('<div class="gt-section"><div class="gt-divider"></div></div>', unsafe_allow_html=True)
 
 # -------------------- Pesos --------------------
 st.markdown('<div class="gt-section">', unsafe_allow_html=True)
@@ -354,7 +335,8 @@ with m2:
     st.markdown(f"<div class='gt-pill'><span>Peso aplicable (kg) 🔒</span> <b>{peso_aplicable:,.2f}</b></div>", unsafe_allow_html=True)
     st.caption(f"Se toma el mayor entre peso volumétrico ({total_peso_vol:,.2f}) y peso bruto ({st.session_state.peso_bruto:,.2f}).")
 st.markdown('</div>', unsafe_allow_html=True)
-st.markdown('<div class="gt-sep-lg"></div>', unsafe_allow_html=True)
+
+st.markdown('<div class="gt-section"><div class="gt-divider"></div></div>', unsafe_allow_html=True)
 
 # -------------------- Valor total --------------------
 st.markdown('<div class="gt-section">', unsafe_allow_html=True)
@@ -362,7 +344,8 @@ st.subheader("Valor total del pedido")
 st.session_state.valor_mercaderia_raw = st.text_input("Valor total (USD)", value=st.session_state.valor_mercaderia_raw, placeholder="Ej: 2500.00")
 st.session_state.valor_mercaderia = to_float(st.session_state.valor_mercaderia_raw, 0.0)
 st.markdown('</div>', unsafe_allow_html=True)
-st.markdown('<div class="gt-sep-lg"></div>', unsafe_allow_html=True)
+
+st.markdown('<div class="gt-section"><div class="gt-divider"></div></div>', unsafe_allow_html=True)
 
 # -------------------- Submit --------------------
 st.markdown('<div id="gt-submit-btn" class="gt-section">', unsafe_allow_html=True)
@@ -414,17 +397,14 @@ if st.session_state.get("show_dialog", False):
 <div class="gt-overlay">
   <div class="gt-modal">
     <a class="gt-close" href="?gt=close" target="_self">✕</a>
-    <div class="gt-head">
-      <div class="gt-badge">✓</div>
-      <h3 class="gt-title">¡Listo!</h3>
-    </div>
+    <h3 class="gt-title">¡Listo!</h3>
     <div class="gt-body">
       <p>Recibimos tu solicitud. En breve te llegará la cotización a {email_html}.</p>
-      <p style="opacity:.8;">Podés cargar otra si querés.</p>
+      <p style="opacity:.85;">Podés cargar otra si querés.</p>
     </div>
     <div class="gt-actions">
-      <a class="gt-btn primary" href="?gt=reset" target="_self">➕ Cargar otra cotización</a>
-      <a class="gt-btn" href="?gt=close" target="_self">Cerrar</a>
+      <a class="gt-btn" href="?gt=reset" target="_self">➕ Cargar otra cotización</a>
+      <a class="gt-btn secondary" href="?gt=close" target="_self">Cerrar</a>
     </div>
   </div>
 </div>

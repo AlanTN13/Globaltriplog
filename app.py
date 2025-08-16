@@ -44,7 +44,10 @@ p,label,span,small{ margin:0 !important; color:var(--ink) !important; }
 }
 .gt-card{
   background:#fff; border:1.5px solid var(--border); border-radius:var(--radius);
-  padding:var(--s2); box-shadow:var(--shadow); margin:8px 0 !important;
+  /* 👇 Tarjeta más fina: solo bajamos padding interno */
+  padding:6px 12px !important;
+  box-shadow:var(--shadow);
+  margin:8px 0 !important;   /* margen se mantiene como está */
 }
 
 /* Gaps reducidos y coherentes */

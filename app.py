@@ -12,76 +12,67 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# -------------------- Estilos (coherencia + espacios mínimos) --------------------
+# -------------------- Estilos (espacios mínimos + sin separador) --------------------
 st.markdown("""
 <style>
-/* ===== Design tokens ===== */
 :root{
-  --ink:#0e1b3d;
-  --muted:#0e1b3db3;
-  --bg:#ffffff;
-  --border:#e6ebf3;
-  --card-shadow:0 6px 16px rgba(17,24,39,.06);
-  --radius:14px;
-
-  /* escala espaciados (4/8/12/16/24) */
-  --s-1:4px; --s0:8px; --s1:12px; --s2:16px; --s3:24px;
+  --ink:#0e1b3d; --muted:#0e1b3db3; --bg:#fff; --border:#e6ebf3;
+  --shadow:0 6px 16px rgba(17,24,39,.06); --radius:14px;
+  --s0:8px; --s1:12px; --s2:16px; --s3:20px;
 }
 
-/* ===== Reset de layout streamlit ===== */
-:root{ --header-height:0 !important; }
+/* Reset & layout base */
 [data-testid="stHeader"], [data-testid="stToolbar"], #MainMenu, footer, header,
 div[data-testid="stDecoration"]{ display:none !important; }
+html, body, .stApp, [data-testid="stAppViewContainer"], section.main{
+  background:var(--bg) !important; color:var(--ink) !important;
+}
+section.main > div.block-container{
+  padding-top:6px !important; padding-bottom:var(--s3) !important;
+}
 
-html, body, .stApp, [data-testid="stAppViewContainer"], section.main{ background:var(--bg) !important; color:var(--ink) !important; }
-[data-testid="stAppViewContainer"]{ padding-top:0 !important; }
-section.main{ padding-top:0 !important; }
-section.main > div.block-container{ padding-top:var(--s0) !important; padding-bottom:var(--s2) !important; }
+/* Tipografía y márgenes compactos */
+h1,h2,h3,h4,h5,h6{ margin:6px 0 4px !important; color:var(--ink) !important; }
+.stCaption{ margin:0 0 6px !important; color:var(--muted) !important; }
+p,label,span,small{ margin:0 !important; }
 
-/* tipografía y márgenes consistentes */
-h1,h2,h3,h4,h5,h6{ color:var(--ink) !important; margin:var(--s0) 0 var(--s0) 0 !important; }
-p, label, small, span{ color:var(--ink) !important; margin:0 !important; }
-.stCaption, .stMarkdown p, .st-emotion-cache-1629p8f{ color:var(--muted) !important; }
-
-/* ===== Contenedores ===== */
+/* Secciones y tarjetas */
 .gt-section{ max-width:1100px; margin:0 auto; }
 .soft-card{
-  background:var(--bg); border:1.5px solid var(--border); border-radius:var(--radius);
-  padding:var(--s2); box-shadow:0 8px 18px rgba(17,24,39,.07);
-  margin:var(--s1) 0 var(--s1);
+  background:#fff; border:1.5px solid var(--border); border-radius:var(--radius);
+  padding:var(--s2); box-shadow:0 8px 18px rgba(17,24,39,.07); margin:10px 0;
 }
 .gt-card{
-  background:var(--bg); border:1.5px solid var(--border); border-radius:var(--radius);
-  padding:var(--s2); box-shadow:var(--card-shadow);
-  margin:var(--s1) 0 var(--s1);
+  background:#fff; border:1.5px solid var(--border); border-radius:var(--radius);
+  padding:var(--s2); box-shadow:var(--shadow); margin:8px 0 !important;
 }
 
-/* separar bloques y columnas con el mismo gap (más chico) */
-div[data-testid="stVerticalBlock"]{ gap:var(--s1) !important; }
-div[data-testid="stHorizontalBlock"]{ gap:var(--s1) !important; }
+/* Gaps reducidos y coherentes */
+div[data-testid="stVerticalBlock"]{ gap:10px !important; }
+div[data-testid="stHorizontalBlock"]{ gap:10px !important; }
 div[data-testid="column"]{ padding:0 !important; }
 
-/* ===== Inputs ===== */
+/* Inputs */
 div[data-testid="stTextInput"] input,
 div[data-testid="stTextArea"] textarea{
-  background:var(--bg) !important; color:var(--ink) !important;
+  background:#fff !important; color:var(--ink) !important;
   border:1.5px solid var(--border) !important; border-radius:var(--radius) !important;
   padding:12px var(--s2) !important; box-shadow:none !important;
 }
 div[data-testid="stTextInput"] input::placeholder,
 div[data-testid="stTextArea"] textarea::placeholder{ color:var(--muted) !important; }
 
-/* NumberInput: misma altura y menos “ruido” */
+/* NumberInput (misma altura) */
 div[data-testid="stNumberInput"] > div{
-  background:var(--bg) !important; border:1.5px solid var(--border) !important;
+  background:#fff !important; border:1.5px solid var(--border) !important;
   border-radius:24px !important; box-shadow:none !important;
 }
 div[data-testid="stNumberInput"] input{
-  background:var(--bg) !important; color:var(--ink) !important;
+  background:#fff !important; color:var(--ink) !important;
   height:44px !important; padding:0 var(--s2) !important; border:none !important;
 }
 div[data-testid="stNumberInput"] > div > div:nth-child(2){
-  background:var(--bg) !important; border-left:1.5px solid var(--border) !important;
+  background:#fff !important; border-left:1.5px solid var(--border) !important;
   border-radius:0 24px 24px 0 !important; padding:2px !important;
 }
 div[data-testid="stNumberInput"] button{
@@ -89,41 +80,28 @@ div[data-testid="stNumberInput"] button{
   border:1px solid var(--border) !important; border-radius:10px !important; box-shadow:none !important;
 }
 
-/* ===== Botones ===== */
+/* Botones */
 div.stButton{ margin:0 !important; }
 div.stButton > button{
   width:100%; background:#f7faff !important; color:var(--ink) !important;
   border:1.5px solid var(--border) !important; border-radius:var(--radius) !important;
-  padding:12px var(--s2) !important; box-shadow:var(--card-shadow) !important;
+  padding:12px var(--s2) !important; box-shadow:var(--shadow) !important;
 }
 div.stButton > button:hover{ background:#eef3ff !important; }
 #gt-submit-btn button{ width:100% !important; }
 
-/* ===== Elementos utilitarios ===== */
-hr{ border:none; border-top:1px solid var(--border); margin:var(--s1) 0; }
-
-/* Pill compacta */
+/* Pill */
 .gt-pill{
-  display:inline-flex; align-items:center; gap:var(--s0);
-  background:var(--bg); border:1.5px solid var(--border); border-radius:12px;
-  padding:8px var(--s1); box-shadow:var(--card-shadow);
+  display:inline-flex; align-items:center; gap:8px;
+  background:#fff; border:1.5px solid var(--border); border-radius:12px;
+  padding:8px 12px; box-shadow:var(--shadow);
 }
 
-/* ===== Filas de acciones (Agregar/Vaciar) ===== */
-.gt-actions-row{ display:grid; grid-template-columns:1fr 1fr; gap:var(--s1); margin-top:var(--s1); }
-@media (max-width: 899px){ .gt-actions-row{ grid-template-columns:1fr; } }
+/* ❌ Ocultar <hr> y eliminar “bache” visual */
+.gt-section hr{ display:none !important; }
 
-/* ===== Ajustes finos para eliminar huecos grandes ===== */
-.stMarkdown h2, h2{ margin-bottom:4px !important; }       /* menos espacio bajo subtítulo */
-.stCaption{ margin-top:0 !important; margin-bottom:8px !important; } /* caption pegado al contenido */
-
-/* Separador dentro de cada sección: más corto y centrado */
-.gt-section hr{
-  width:72%;
-  max-width:72%;
-  border-top:1px solid var(--border);
-  margin:8px auto !important; /* centrado y con poco margen */
-}
+/* Ajuste extra: primer card más pegada al caption */
+.gt-section .stCaption + div .gt-card{ margin-top:6px !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -135,7 +113,7 @@ def init_state():
     st.session_state.setdefault("nombre","")
     st.session_state.setdefault("email","")
     st.session_state.setdefault("telefono","")
-    st.session_state.setdefault("pais_origen","China")   # default China
+    st.session_state.setdefault("pais_origen","China")
     st.session_state.setdefault("pais_origen_otro","")
     st.session_state.setdefault("peso_bruto_raw","0.00")
     st.session_state.setdefault("peso_bruto",0.0)
@@ -147,8 +125,10 @@ init_state()
 
 # -------------------- Helpers --------------------
 def to_float(s, default=0.0):
-    try: return float(str(s).replace(",",".")) if s not in (None,"") else default
-    except: return default
+    try:
+        return float(str(s).replace(",",".")) if s not in (None,"") else default
+    except:
+        return default
 
 def compute_total_vol(rows):
     total = 0.0
@@ -224,7 +204,6 @@ st.markdown('</div>', unsafe_allow_html=True)
 st.markdown('<div class="gt-section">', unsafe_allow_html=True)
 st.subheader("Productos")
 st.caption("Cargá descripción y link del/los producto(s). Podés agregar varios.")
-st.markdown("<hr>", unsafe_allow_html=True)
 
 del_prod_idx = None
 for i, p in enumerate(st.session_state.productos):
@@ -260,7 +239,6 @@ st.markdown('</div>', unsafe_allow_html=True)
 st.markdown('<div class="gt-section">', unsafe_allow_html=True)
 st.subheader("Bultos")
 st.caption("Cargá por bulto: **cantidad** y **dimensiones en cm**. Calculamos el **peso volumétrico**.")
-st.markdown("<hr>", unsafe_allow_html=True)
 
 del_row_idx = None
 for i, r in enumerate(st.session_state.rows):

@@ -12,11 +12,11 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# -------------------- Estilos (espacios mínimos + sin separador) --------------------
+# -------------------- Estilos (compacto + radios finos) --------------------
 st.markdown("""
 <style>
 :root{
-  --ink:#0e1b3d; --muted:#0e1b3db3; --bg:#fff; --border:#e6ebf3;
+  --ink:#0e1b3d; --muted:#6b7280; --bg:#fff; --border:#e6ebf3;
   --shadow:0 6px 16px rgba(17,24,39,.06); --radius:14px;
   --s0:8px; --s1:12px; --s2:16px; --s3:20px;
 }
@@ -34,7 +34,7 @@ section.main > div.block-container{
 /* Tipografía y márgenes compactos */
 h1,h2,h3,h4,h5,h6{ margin:6px 0 4px !important; color:var(--ink) !important; }
 .stCaption{ margin:0 0 6px !important; color:var(--muted) !important; }
-p,label,span,small{ margin:0 !important; }
+p,label,span,small{ margin:0 !important; color:var(--ink) !important; }
 
 /* Secciones y tarjetas */
 .gt-section{ max-width:1100px; margin:0 auto; }
@@ -60,7 +60,7 @@ div[data-testid="stTextArea"] textarea{
   padding:12px var(--s2) !important; box-shadow:none !important;
 }
 div[data-testid="stTextInput"] input::placeholder,
-div[data-testid="stTextArea"] textarea::placeholder{ color:var(--muted) !important; }
+div[data-testid="stTextArea"] textarea::placeholder{ color:#94a3b8 !important; }
 
 /* NumberInput (misma altura) */
 div[data-testid="stNumberInput"] > div{
@@ -99,9 +99,19 @@ div.stButton > button:hover{ background:#eef3ff !important; }
 
 /* ❌ Ocultar <hr> y eliminar “bache” visual */
 .gt-section hr{ display:none !important; }
-
-/* Ajuste extra: primer card más pegada al caption */
 .gt-section .stCaption + div .gt-card{ margin-top:6px !important; }
+
+/* ===== Radios (China / Otro) más finos y compactos ===== */
+[data-testid="stRadio"]{ margin-top:4px !important; margin-bottom:8px !important; }
+[data-testid="stRadio"] > label{ color:var(--muted) !important; font-weight:500 !important; margin-bottom:4px !important; }
+[data-testid="stRadio"] div[role="radiogroup"]{
+  display:flex !important; align-items:center !important; gap:12px !important;
+}
+[data-testid="stRadio"] label p{ margin:0 !important; font-size:0.95rem !important; color:var(--ink) !important; }
+[data-testid="stRadio"] input[type="radio"]{
+  transform: scale(0.9);           /* círculo más chico */
+  accent-color: #0e1b3d;           /* color consistente */
+}
 </style>
 """, unsafe_allow_html=True)
 

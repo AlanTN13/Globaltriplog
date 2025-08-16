@@ -33,22 +33,21 @@ h1,h2,h3,h4,h5,h6{ margin:8px 0 6px !important; color:var(--ink) !important; }
 .stCaption{ margin:0 0 6px !important; color:var(--muted) !important; }
 label{ margin-bottom:4px !important; }
 
-/* Secciones y tarjetas */
+/* Secciones contenedor */
 .gt-section{ max-width:1100px; margin:0 auto; }
 .soft-card{
   background:#fff; border:1.5px solid var(--border); border-radius:var(--radius);
   padding:var(--s2); box-shadow:0 8px 18px rgba(17,24,39,.07); margin:10px 0 var(--s3);
 }
-.gt-card{
-  background:#fff; border:1.5px solid var(--border); border-radius:var(--radius);
-  padding:10px 12px !important; box-shadow:var(--shadow); margin:10px 0 !important;
-}
 
-/* Divider sutil (reemplaza “bloques vacíos”) */
+/* Divisores */
 .gt-divider{
   height:1px; width:100%; margin:14px 0 18px;
   background:linear-gradient(90deg, rgba(14,27,61,.08), rgba(14,27,61,.03), rgba(14,27,61,.08));
   border-radius:1px;
+}
+.gt-item-divider{
+  height:1px; width:100%; background:#eef2f9; margin:8px 0 10px; border-radius:1px;
 }
 
 /* Gaps */
@@ -106,45 +105,35 @@ div.stButton > button:hover{ background:#eef3ff !important; }
 [data-testid="stRadio"] label p{ margin:0 !important; font-size:0.95rem !important; color:var(--ink) !important; }
 [data-testid="stRadio"] input[type="radio"]{ transform:scale(0.9); accent-color:#0e1b3d; }
 
-/* ===== Popup estilo “ligero” (como tu segunda imagen) ===== */
+/* ===== Popup estilo liviano ===== */
 .gt-overlay{
-  position:fixed; inset:0; background:rgba(14,27,61,.45);
-  backdrop-filter: blur(2.5px);
+  position:fixed; inset:0; background:rgba(14,27,61,.45); backdrop-filter: blur(2.5px);
   display:flex; align-items:center; justify-content:center; z-index:9999;
 }
 .gt-modal{
   position:relative; width:min(720px, 94vw);
   background:#fff; border:1px solid #e8eef7; border-radius:24px;
-  box-shadow:0 20px 65px rgba(14,27,61,.14); padding:24px 28px;
-  animation:gt-pop .18s ease-out;
+  box-shadow:0 20px 65px rgba(14,27,61,.14); padding:24px 28px; animation:gt-pop .18s ease-out;
 }
 .gt-title{ margin:0 0 8px !important; font-size:30px; color:var(--ink); }
 .gt-body p{ margin:10px 0; color:#1f2a44; line-height:1.55; }
 .gt-body a{ color:#2563eb; text-decoration:underline; }
-
-/* Acciones livianas */
 .gt-actions{ display:flex; gap:14px; margin-top:18px; flex-wrap:wrap; }
 .gt-btn{
-  display:inline-flex; align-items:center; gap:8px;
-  padding:14px 18px; border-radius:16px;
-  background:#edf3ff; border:1.5px solid #cfe0ff; color:#0e1b3d;
-  text-decoration:underline; font-weight:600;
+  display:inline-flex; align-items:center; gap:8px; padding:14px 18px; border-radius:16px;
+  background:#edf3ff; border:1.5px solid #cfe0ff; color:#0e1b3d; text-decoration:underline; font-weight:600;
 }
 .gt-btn:hover{ background:#e7efff; }
 .gt-btn.secondary{ background:#f6f8ff; border-color:#dbe6ff; }
-
-/* Botón X */
 .gt-close{
-  position:absolute; top:14px; right:14px;
-  width:40px; height:40px; border-radius:12px;
-  display:grid; place-items:center;
-  background:#f6f8ff; border:1px solid #dbe6ff; color:#2a6ae6; text-decoration:none; font-size:20px;
+  position:absolute; top:14px; right:14px; width:40px; height:40px; border-radius:12px;
+  display:grid; place-items:center; background:#f6f8ff; border:1px solid #dbe6ff; color:#2a6ae6; text-decoration:none; font-size:20px;
 }
 .gt-close:hover{ background:#eef3ff; }
 
 @keyframes gt-pop{ from{ transform:translateY(6px); opacity:.0 } to{ transform:translateY(0); opacity:1 } }
 
-/* Labels de inputs visibles */
+/* Labels visibles */
 div[data-testid="stTextInput"] label,
 div[data-testid="stNumberInput"] label,
 div[data-testid="stTextArea"] label{
@@ -258,7 +247,6 @@ st.caption("Cargá descripción y link del/los producto(s). Podés agregar vario
 
 del_prod_idx = None
 for i, p in enumerate(st.session_state.productos):
-    st.markdown('<div class="gt-card">', unsafe_allow_html=True)
     st.markdown(f"**Producto {i+1}**")
     pc1, pc2 = st.columns(2)
     with pc1:
@@ -275,7 +263,9 @@ for i, p in enumerate(st.session_state.productos):
     with col_del:
         if st.button("🗑️ Eliminar producto", key=f"del_prod_{i}", use_container_width=True):
             del_prod_idx = i
-    st.markdown('</div>', unsafe_allow_html=True)
+    # separador entre ítems
+    st.markdown('<div class="gt-item-divider"></div>', unsafe_allow_html=True)
+
 if del_prod_idx is not None:
     st.session_state.productos.pop(del_prod_idx)
 
@@ -295,7 +285,6 @@ st.caption("Cargá por bulto: **cantidad** y **dimensiones en cm**. Calculamos e
 
 del_row_idx = None
 for i, r in enumerate(st.session_state.rows):
-    st.markdown('<div class="gt-card">', unsafe_allow_html=True)
     st.markdown(f"**Bulto {i+1}**")
     c1, c2, c3, c4 = st.columns([0.9, 1, 1, 1])
     with c1: st.session_state.rows[i]["cant"]  = st.number_input("Cantidad",  min_value=0,   step=1,   value=int(r["cant"]),  key=f"cant_{i}")
@@ -306,7 +295,8 @@ for i, r in enumerate(st.session_state.rows):
     with col_del:
         if st.button("🗑️ Eliminar bulto", key=f"del_row_{i}", use_container_width=True):
             del_row_idx = i
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('<div class="gt-item-divider"></div>', unsafe_allow_html=True)
+
 if del_row_idx is not None:
     st.session_state.rows.pop(del_row_idx)
 

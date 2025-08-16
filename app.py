@@ -101,7 +101,7 @@ div.stButton > button:hover{ background:#eef3ff !important; }
   display:inline-flex; align-items:center; gap:8px;
   background:#fff; border:1.5px solid var(--border); border-radius:12px;
   padding:10px 12px; box-shadow:var(--shadow);
-  margin-bottom:6px !important;  /* <-- ajuste separación extra */
+  margin-bottom:6px !important;
 }
 
 /* Radios (China / Otro) */
@@ -115,21 +115,56 @@ div.stButton > button:hover{ background:#eef3ff !important; }
 .gt-sep{ height:6px; }
 .gt-sep-lg{ height:10px; }
 
-/* Popup */
+/* ===== Popup (refactor bonito) ===== */
 .gt-overlay{
-  position:fixed; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; z-index:9999;
+  position:fixed; inset:0;
+  background:rgba(14,27,61,.45);
+  backdrop-filter: blur(3px);
+  display:flex; align-items:center; justify-content:center;
+  z-index:9999;
 }
 .gt-modal{
-  background:#fff; border:1.5px solid var(--border); border-radius:16px; box-shadow:var(--shadow);
-  width:min(520px, 92vw); padding:20px;
+  position:relative;
+  width:min(560px, 92vw);
+  background:#fff;
+  border:1px solid #e8eef7;
+  border-radius:20px;
+  box-shadow:0 18px 60px rgba(14,27,61,.12);
+  padding:24px;
+  animation: gt-pop .18s ease-out;
 }
-.gt-modal h3{ margin:0 0 8px !important; }
-.gt-actions{ display:flex; gap:10px; margin-top:14px; }
+.gt-head{ display:flex; align-items:center; gap:12px; margin-bottom:6px; }
+.gt-badge{
+  width:44px; height:44px; border-radius:12px;
+  background:#eef3ff; color:#0e1b3d; display:grid; place-items:center;
+  font-size:22px; font-weight:700;
+}
+.gt-title{ margin:0; font-size:26px; color:var(--ink); }
+
+.gt-body{ margin-top:6px; }
+.gt-body p{ margin:8px 0; color:#1f2a44; line-height:1.5; }
+.gt-body a{ color:#2563eb; text-decoration:underline; }
+
+.gt-actions{ display:flex; gap:12px; margin-top:16px; flex-wrap:wrap; }
 .gt-btn{
-  display:inline-block; padding:10px 14px; border-radius:12px; border:1.5px solid var(--border);
-  text-decoration:none; color:var(--ink); background:#f7faff;
+  display:inline-flex; align-items:center; gap:8px;
+  padding:12px 16px; border-radius:12px;
+  border:1.5px solid #d9e4ff; background:#f7faff; color:#0e1b3d;
+  text-decoration:none; font-weight:600;
 }
 .gt-btn:hover{ background:#eef3ff; }
+.gt-btn.primary{ background:#0e1b3d; color:#fff; border-color:#0e1b3d; }
+.gt-btn.primary:hover{ filter:brightness(1.05); }
+
+.gt-close{
+  position:absolute; top:12px; right:12px;
+  width:36px; height:36px; border-radius:10px;
+  display:grid; place-items:center;
+  background:#f7faff; border:1px solid #e8eef7; color:#0e1b3d; text-decoration:none;
+}
+.gt-close:hover{ background:#eef3ff; }
+
+@keyframes gt-pop{ from{ transform:translateY(6px); opacity:.0 } to{ transform:translateY(0); opacity:1 } }
 
 /* Labels de inputs visibles */
 div[data-testid="stTextInput"] label,
@@ -378,11 +413,17 @@ if st.session_state.get("show_dialog", False):
     st.markdown(f"""
 <div class="gt-overlay">
   <div class="gt-modal">
-    <h3>¡Listo!</h3>
-    <p>Recibimos tu solicitud. En breve te llegará la cotización a {email_html}.</p>
-    <p style="opacity:.75;">Podés cargar otra si querés.</p>
+    <a class="gt-close" href="?gt=close" target="_self">✕</a>
+    <div class="gt-head">
+      <div class="gt-badge">✓</div>
+      <h3 class="gt-title">¡Listo!</h3>
+    </div>
+    <div class="gt-body">
+      <p>Recibimos tu solicitud. En breve te llegará la cotización a {email_html}.</p>
+      <p style="opacity:.8;">Podés cargar otra si querés.</p>
+    </div>
     <div class="gt-actions">
-      <a class="gt-btn" href="?gt=reset" target="_self">➕ Cargar otra cotización</a>
+      <a class="gt-btn primary" href="?gt=reset" target="_self">➕ Cargar otra cotización</a>
       <a class="gt-btn" href="?gt=close" target="_self">Cerrar</a>
     </div>
   </div>

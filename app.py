@@ -12,13 +12,13 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# -------------------- Estilos (compacto + radios finos) --------------------
+# -------------------- Estilos (más aire entre bloques) --------------------
 st.markdown("""
 <style>
 :root{
   --ink:#0e1b3d; --muted:#6b7280; --bg:#fff; --border:#e6ebf3;
   --shadow:0 6px 16px rgba(17,24,39,.06); --radius:14px;
-  --s0:8px; --s1:12px; --s2:16px; --s3:20px;
+  --s0:8px; --s1:12px; --s2:16px; --s3:20px; --s4:28px;
 }
 
 /* Reset & layout base */
@@ -28,31 +28,31 @@ html, body, .stApp, [data-testid="stAppViewContainer"], section.main{
   background:var(--bg) !important; color:var(--ink) !important;
 }
 section.main > div.block-container{
-  padding-top:6px !important; padding-bottom:var(--s3) !important;
+  padding-top:10px !important; padding-bottom:var(--s3) !important;
 }
 
-/* Tipografía y márgenes compactos */
-h1,h2,h3,h4,h5,h6{ margin:6px 0 4px !important; color:var(--ink) !important; }
-.stCaption{ margin:0 0 6px !important; color:var(--muted) !important; }
-p,label,span,small{ margin:0 !important; color:var(--ink) !important; }
+/* Tipografía y márgenes */
+h1,h2,h3,h4,h5,h6{ margin:8px 0 6px !important; color:var(--ink) !important; }
+.stCaption{ margin:0 0 10px !important; color:var(--muted) !important; }
+label, .st-emotion-cache-1wbqy5l, .st-emotion-cache-0 { margin-bottom:6px !important; }
 
 /* Secciones y tarjetas */
 .gt-section{ max-width:1100px; margin:0 auto; }
 .soft-card{
   background:#fff; border:1.5px solid var(--border); border-radius:var(--radius);
-  padding:var(--s2); box-shadow:0 8px 18px rgba(17,24,39,.07); margin:10px 0;
+  padding:var(--s2); box-shadow:0 8px 18px rgba(17,24,39,.07); margin:14px 0 var(--s3);
 }
 .gt-card{
   background:#fff; border:1.5px solid var(--border); border-radius:var(--radius);
-  /* 👇 Tarjeta más fina: solo bajamos padding interno */
-  padding:6px 12px !important;
+  padding:12px 14px !important;               /* + padding interno */
   box-shadow:var(--shadow);
-  margin:8px 0 !important;   /* margen se mantiene como está */
+  margin:14px 0 !important;                   /* + separación entre tarjetas */
 }
+.gt-actions-row{ margin:8px 0 var(--s3) !important; }
 
-/* Gaps reducidos y coherentes */
-div[data-testid="stVerticalBlock"]{ gap:10px !important; }
-div[data-testid="stHorizontalBlock"]{ gap:10px !important; }
+/* Gaps consistentes (más aire) */
+div[data-testid="stVerticalBlock"]{ gap:14px !important; }
+div[data-testid="stHorizontalBlock"]{ gap:14px !important; }
 div[data-testid="column"]{ padding:0 !important; }
 
 /* Inputs */
@@ -64,6 +64,9 @@ div[data-testid="stTextArea"] textarea{
 }
 div[data-testid="stTextInput"] input::placeholder,
 div[data-testid="stTextArea"] textarea::placeholder{ color:#94a3b8 !important; }
+
+/* TextArea altura cómoda */
+textarea{ min-height:96px !important; }
 
 /* NumberInput (misma altura) */
 div[data-testid="stNumberInput"] > div{
@@ -93,28 +96,39 @@ div.stButton > button{
 div.stButton > button:hover{ background:#eef3ff !important; }
 #gt-submit-btn button{ width:100% !important; }
 
-/* Pill */
+/* Pills/resumenes */
 .gt-pill{
   display:inline-flex; align-items:center; gap:8px;
   background:#fff; border:1.5px solid var(--border); border-radius:12px;
-  padding:8px 12px; box-shadow:var(--shadow);
+  padding:10px 14px; box-shadow:var(--shadow);
 }
 
-/* ❌ Ocultar <hr> y eliminar “bache” visual */
-.gt-section hr{ display:none !important; }
-.gt-section .stCaption + div .gt-card{ margin-top:6px !important; }
-
-/* ===== Radios (China / Otro) más finos y compactos ===== */
-[data-testid="stRadio"]{ margin-top:4px !important; margin-bottom:8px !important; }
-[data-testid="stRadio"] > label{ color:var(--muted) !important; font-weight:500 !important; margin-bottom:4px !important; }
-[data-testid="stRadio"] div[role="radiogroup"]{
-  display:flex !important; align-items:center !important; gap:12px !important;
-}
+/* Radios (China / Otro) */
+[data-testid="stRadio"]{ margin-top:6px !important; margin-bottom:10px !important; }
+[data-testid="stRadio"] > label{ color:var(--muted) !important; font-weight:500 !important; margin-bottom:6px !important; }
+[data-testid="stRadio"] div[role="radiogroup"]{ display:flex !important; align-items:center !important; gap:16px !important; }
 [data-testid="stRadio"] label p{ margin:0 !important; font-size:0.95rem !important; color:var(--ink) !important; }
-[data-testid="stRadio"] input[type="radio"]{
-  transform: scale(0.9);           /* círculo más chico */
-  accent-color: #0e1b3d;           /* color consistente */
+[data-testid="stRadio"] input[type="radio"]{ transform: scale(0.95); accent-color:#0e1b3d; }
+
+/* Separadores sutiles entre grandes bloques */
+.gt-sep{ height:18px; }
+.gt-sep-lg{ height:26px; }
+
+/* Estilos mínimos para el popup (por si no estaban) */
+.gt-overlay{
+  position:fixed; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; z-index:9999;
 }
+.gt-modal{
+  background:#fff; border:1.5px solid var(--border); border-radius:16px; box-shadow:var(--shadow);
+  width:min(520px, 92vw); padding:20px;
+}
+.gt-modal h3{ margin:0 0 8px !important; }
+.gt-actions{ display:flex; gap:10px; margin-top:14px; }
+.gt-btn{
+  display:inline-block; padding:10px 14px; border-radius:12px; border:1.5px solid var(--border);
+  text-decoration:none; color:var(--ink); background:#f7faff;
+}
+.gt-btn:hover{ background:#eef3ff; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -187,10 +201,9 @@ def clear_productos(): st.session_state.productos = [{"descripcion":"", "link":"
 st.markdown("""
 <div class="soft-card gt-section">
   <h2 style="margin:0;">📦 Cotización de Envío por Courier</h2>
-  <p style="margin:4px 0 0;">Completá tus datos, el producto y sus medidas, y te enviamos la cotización por mail.</p>
+  <p style="margin:6px 0 0;">Completá tus datos, el producto y sus medidas, y te enviamos la cotización por mail.</p>
 </div>
 """, unsafe_allow_html=True)
-st.write("")
 
 # -------------------- Datos de contacto --------------------
 st.markdown('<div class="gt-section">', unsafe_allow_html=True)
@@ -200,6 +213,7 @@ with c1: st.session_state.nombre = st.text_input("Nombre completo*", value=st.se
 with c2: st.session_state.email = st.text_input("Correo electrónico*", value=st.session_state.email, placeholder="ejemplo@email.com")
 with c3: st.session_state.telefono = st.text_input("Teléfono*", value=st.session_state.telefono, placeholder="Ej: 11 5555 5555")
 st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('<div class="gt-sep-lg"></div>', unsafe_allow_html=True)
 
 # -------------------- País de origen --------------------
 st.markdown('<div class="gt-section">', unsafe_allow_html=True)
@@ -212,6 +226,7 @@ if sel == "Otro":
 else:
     st.session_state.pais_origen = "China"
 st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('<div class="gt-sep-lg"></div>', unsafe_allow_html=True)
 
 # -------------------- Productos --------------------
 st.markdown('<div class="gt-section">', unsafe_allow_html=True)
@@ -247,6 +262,7 @@ with pA: st.button("➕ Agregar producto", on_click=add_producto, use_container_
 with pB: st.button("🧹 Vaciar productos", on_click=clear_productos, use_container_width=True)
 st.markdown('</div>', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('<div class="gt-sep-lg"></div>', unsafe_allow_html=True)
 
 # -------------------- Bultos --------------------
 st.markdown('<div class="gt-section">', unsafe_allow_html=True)
@@ -276,6 +292,7 @@ with ba: st.button("➕ Agregar bulto", on_click=add_row, use_container_width=Tr
 with bb: st.button("🧹 Vaciar bultos", on_click=clear_rows, use_container_width=True)
 st.markdown('</div>', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('<div class="gt-sep-lg"></div>', unsafe_allow_html=True)
 
 # -------------------- Pesos --------------------
 st.markdown('<div class="gt-section">', unsafe_allow_html=True)
@@ -293,6 +310,7 @@ with m2:
     st.markdown(f"<div class='gt-pill'><span>Peso aplicable (kg) 🔒</span> <b>{peso_aplicable:,.2f}</b></div>", unsafe_allow_html=True)
     st.caption(f"Se toma el mayor entre peso volumétrico ({total_peso_vol:,.2f}) y peso bruto ({st.session_state.peso_bruto:,.2f}).")
 st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('<div class="gt-sep-lg"></div>', unsafe_allow_html=True)
 
 # -------------------- Valor total --------------------
 st.markdown('<div class="gt-section">', unsafe_allow_html=True)
@@ -300,9 +318,9 @@ st.subheader("Valor total del pedido")
 st.session_state.valor_mercaderia_raw = st.text_input("Valor total (USD)", value=st.session_state.valor_mercaderia_raw, placeholder="Ej: 2500.00")
 st.session_state.valor_mercaderia = to_float(st.session_state.valor_mercaderia_raw, 0.0)
 st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('<div class="gt-sep-lg"></div>', unsafe_allow_html=True)
 
 # -------------------- Submit --------------------
-st.write("")
 st.markdown('<div id="gt-submit-btn" class="gt-section">', unsafe_allow_html=True)
 submit_clicked = st.button("📨 Solicitar cotización", use_container_width=True, key="gt_submit_btn")
 st.markdown('</div>', unsafe_allow_html=True)

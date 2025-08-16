@@ -1,3 +1,4 @@
+# app.py
 from __future__ import annotations
 import os, json, requests
 from datetime import datetime
@@ -119,12 +120,16 @@ div.stButton > button:hover{ background:#eef3ff !important; }
 .gt-body p{ margin:10px 0; color:#1f2a44; line-height:1.55; }
 .gt-body a{ color:#2563eb; text-decoration:underline; }
 .gt-actions{ display:flex; gap:14px; margin-top:18px; flex-wrap:wrap; }
+
+/* Botones del modal con el mismo color que el título */
 .gt-btn{
   display:inline-flex; align-items:center; gap:8px; padding:14px 18px; border-radius:16px;
-  background:#edf3ff; border:1.5px solid #cfe0ff; color:#0e1b3d; text-decoration:underline; font-weight:600;
+  background:#edf3ff; border:1.5px solid #cfe0ff; color:var(--ink) !important;
+  text-decoration:underline; font-weight:600;
 }
-.gt-btn:hover{ background:#e7efff; }
-.gt-btn.secondary{ background:#f6f8ff; border-color:#dbe6ff; }
+.gt-btn:hover{ background:#e7efff; color:var(--ink) !important; }
+.gt-btn.secondary{ background:#f6f8ff; border-color:#dbe6ff; color:var(--ink) !important; }
+
 .gt-close{
   position:absolute; top:14px; right:14px; width:40px; height:40px; border-radius:12px;
   display:grid; place-items:center; background:#f6f8ff; border:1px solid #dbe6ff; color:#2a6ae6; text-decoration:none; font-size:20px;

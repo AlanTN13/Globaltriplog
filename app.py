@@ -101,6 +101,7 @@ div.stButton > button:hover{ background:#eef3ff !important; }
   display:inline-flex; align-items:center; gap:8px;
   background:#fff; border:1.5px solid var(--border); border-radius:12px;
   padding:10px 12px; box-shadow:var(--shadow);
+  margin-bottom:6px !important;  /* <-- ajuste separación extra */
 }
 
 /* Radios (China / Otro) */

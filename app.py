@@ -29,8 +29,8 @@ html, body, .stApp, [data-testid="stAppViewContainer"], section.main{
 }
 /* 👉 un poco más de aire arriba/abajo */
 section.main > div.block-container{
-  padding-top:14px !important;
-  padding-bottom:24px !important;
+  padding-top:14px !important;        /* antes 6px */
+  padding-bottom:24px !important;     /* antes var(--s3) ~ 20px */
 }
 
 /* Tipografía y márgenes compactos */
@@ -47,14 +47,14 @@ p,label,span,small{ margin:0 !important; color:var(--ink) !important; }
 .gt-card{
   background:#fff; border:1.5px solid var(--border); border-radius:var(--radius);
   /* fina, pero con un poquito más de aire */
-  padding:9px 14px !important;
+  padding:9px 14px !important;        /* antes 6px 12px */
   box-shadow:var(--shadow);
   margin:8px 0 !important;
 }
 
 /* Gaps un toque más holgados */
-div[data-testid="stVerticalBlock"]{ gap:12px !important; }
-div[data-testid="stHorizontalBlock"]{ gap:12px !important; }
+div[data-testid="stVerticalBlock"]{ gap:12px !important; }      /* antes 10px */
+div[data-testid="stHorizontalBlock"]{ gap:12px !important; }    /* antes 10px */
 div[data-testid="column"]{ padding:0 !important; }
 
 /* 👉 separador suave debajo de cada control */
@@ -62,16 +62,7 @@ div[data-testid="stTextInput"],
 div[data-testid="stTextArea"],
 div[data-testid="stNumberInput"],
 div.stButton{
-  margin-bottom:12px !important;
-}
-
-/* ===== FIX: sombra oscura bajo textareas (wrapper de Streamlit) ===== */
-div[data-testid="stTextArea"],
-div[data-testid="stTextArea"] > div,
-div[data-testid="stTextArea"] > div > div{
-  background:#fff !important;
-  box-shadow:none !important;
-  filter:none !important;
+  margin-bottom:12px !important;      /* añade aire entre campos */
 }
 
 /* Inputs */
@@ -79,7 +70,7 @@ div[data-testid="stTextInput"] input,
 div[data-testid="stTextArea"] textarea{
   background:#fff !important; color:var(--ink) !important;
   border:1.5px solid var(--border) !important; border-radius:var(--radius) !important;
-  padding:12px var(--s2) !important; box-shadow:none !important; outline:none !important;
+  padding:12px var(--s2) !important; box-shadow:none !important;
 }
 div[data-testid="stTextInput"] input::placeholder,
 div[data-testid="stTextArea"] textarea::placeholder{ color:#94a3b8 !important; }

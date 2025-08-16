@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# -------------------- Estilos (compacto + radios finos) --------------------
+# -------------------- Estilos (compacto + radios finos + un poco más de padding) --------------------
 st.markdown("""
 <style>
 :root{
@@ -27,13 +27,15 @@ div[data-testid="stDecoration"]{ display:none !important; }
 html, body, .stApp, [data-testid="stAppViewContainer"], section.main{
   background:var(--bg) !important; color:var(--ink) !important;
 }
+/* 👉 un poco más de aire arriba/abajo */
 section.main > div.block-container{
-  padding-top:6px !important; padding-bottom:var(--s3) !important;
+  padding-top:14px !important;        /* antes 6px */
+  padding-bottom:24px !important;     /* antes var(--s3) ~ 20px */
 }
 
 /* Tipografía y márgenes compactos */
 h1,h2,h3,h4,h5,h6{ margin:6px 0 4px !important; color:var(--ink) !important; }
-.stCaption{ margin:0 0 6px !important; color:var(--muted) !important; }
+.stCaption{ margin:0 0 8px !important; color:var(--muted) !important; }
 p,label,span,small{ margin:0 !important; color:var(--ink) !important; }
 
 /* Secciones y tarjetas */
@@ -44,16 +46,24 @@ p,label,span,small{ margin:0 !important; color:var(--ink) !important; }
 }
 .gt-card{
   background:#fff; border:1.5px solid var(--border); border-radius:var(--radius);
-  /* 👇 Tarjeta más fina: solo bajamos padding interno */
-  padding:6px 12px !important;
+  /* fina, pero con un poquito más de aire */
+  padding:9px 14px !important;        /* antes 6px 12px */
   box-shadow:var(--shadow);
-  margin:8px 0 !important;   /* margen se mantiene como está */
+  margin:8px 0 !important;
 }
 
-/* Gaps reducidos y coherentes */
-div[data-testid="stVerticalBlock"]{ gap:10px !important; }
-div[data-testid="stHorizontalBlock"]{ gap:10px !important; }
+/* Gaps un toque más holgados */
+div[data-testid="stVerticalBlock"]{ gap:12px !important; }      /* antes 10px */
+div[data-testid="stHorizontalBlock"]{ gap:12px !important; }    /* antes 10px */
 div[data-testid="column"]{ padding:0 !important; }
+
+/* 👉 separador suave debajo de cada control */
+div[data-testid="stTextInput"],
+div[data-testid="stTextArea"],
+div[data-testid="stNumberInput"],
+div.stButton{
+  margin-bottom:12px !important;      /* añade aire entre campos */
+}
 
 /* Inputs */
 div[data-testid="stTextInput"] input,
@@ -84,7 +94,6 @@ div[data-testid="stNumberInput"] button{
 }
 
 /* Botones */
-div.stButton{ margin:0 !important; }
 div.stButton > button{
   width:100%; background:#f7faff !important; color:var(--ink) !important;
   border:1.5px solid var(--border) !important; border-radius:var(--radius) !important;
@@ -105,15 +114,15 @@ div.stButton > button:hover{ background:#eef3ff !important; }
 .gt-section .stCaption + div .gt-card{ margin-top:6px !important; }
 
 /* ===== Radios (China / Otro) más finos y compactos ===== */
-[data-testid="stRadio"]{ margin-top:4px !important; margin-bottom:8px !important; }
+[data-testid="stRadio"]{ margin-top:6px !important; margin-bottom:10px !important; }
 [data-testid="stRadio"] > label{ color:var(--muted) !important; font-weight:500 !important; margin-bottom:4px !important; }
 [data-testid="stRadio"] div[role="radiogroup"]{
   display:flex !important; align-items:center !important; gap:12px !important;
 }
 [data-testid="stRadio"] label p{ margin:0 !important; font-size:0.95rem !important; color:var(--ink) !important; }
 [data-testid="stRadio"] input[type="radio"]{
-  transform: scale(0.9);           /* círculo más chico */
-  accent-color: #0e1b3d;           /* color consistente */
+  transform: scale(0.9);
+  accent-color: #0e1b3d;
 }
 </style>
 """, unsafe_allow_html=True)

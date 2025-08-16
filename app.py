@@ -1,4 +1,3 @@
-# app.py
 from __future__ import annotations
 import os, json, requests
 from datetime import datetime
@@ -130,6 +129,14 @@ div.stButton > button:hover{ background:#eef3ff !important; }
   text-decoration:none; color:var(--ink); background:#f7faff;
 }
 .gt-btn:hover{ background:#eef3ff; }
+
+/* Labels de inputs visibles */
+div[data-testid="stTextInput"] label,
+div[data-testid="stNumberInput"] label,
+div[data-testid="stTextArea"] label {
+  color: var(--ink) !important;
+  font-weight: 600 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 

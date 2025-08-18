@@ -12,6 +12,11 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+# ---- Keepalive ultra liviano (para UptimeRobot, cron, etc.) ----
+if "ping" in st.query_params:
+    st.write("ok")
+    st.stop()
+
 # -------------------- Estilos --------------------
 st.markdown("""
 <style>
@@ -207,10 +212,17 @@ def validate():
     return errs
 
 # -------------------- Callbacks --------------------
-def add_row(): st.session_state.rows.append({"cant": 0, "ancho": 0, "alto": 0, "largo": 0})
-def clear_rows(): st.session_state.rows = [{"cant": 0, "ancho": 0, "alto": 0, "largo": 0}]
-def add_producto(): st.session_state.productos.append({"descripcion":"", "link":""})
-def clear_productos(): st.session_state.productos = [{"descripcion":"", "link":""}]
+def add_row():
+    st.session_state.rows.append({"cant": 0, "ancho": 0, "alto": 0, "largo": 0})
+
+def clear_rows():
+    st.session_state.rows = [{"cant": 0, "ancho": 0, "alto": 0, "largo": 0}]
+
+def add_producto():
+    st.session_state.productos.append({"descripcion":"", "link":""})
+
+def clear_productos():
+    st.session_state.productos = [{"descripcion":"", "link":""}]
 
 # -------------------- Header --------------------
 st.markdown("""
@@ -250,7 +262,6 @@ st.markdown('<div class="gt-section">', unsafe_allow_html=True)
 st.subheader("Productos")
 st.caption("Cargá descripción y link del/los producto(s). Podés agregar varios.")
 
-del_prod_idx = None
 for i, p in enumerate(st.session_state.productos):
     st.markdown(f"**Producto {i+1}**")
     pc1, pc2 = st.columns(2)
@@ -266,13 +277,15 @@ for i, p in enumerate(st.session_state.productos):
         )
     col_del, _ = st.columns([1,3])
     with col_del:
+        # Eliminar en un solo click
         if st.button("🗑️ Eliminar producto", key=f"del_prod_{i}", use_container_width=True):
-            del_prod_idx = i
-    # separador entre ítems
+            # Garantizar al menos 1 item
+            if len(st.session_state.productos) > 1:
+                st.session_state.productos.pop(i)
+            else:
+                st.session_state.productos = [{"descripcion":"", "link":""}]
+            st.rerun()
     st.markdown('<div class="gt-item-divider"></div>', unsafe_allow_html=True)
-
-if del_prod_idx is not None:
-    st.session_state.productos.pop(del_prod_idx)
 
 st.markdown('<div class="gt-actions-row">', unsafe_allow_html=True)
 pA, pB = st.columns(2)
@@ -288,7 +301,6 @@ st.markdown('<div class="gt-section">', unsafe_allow_html=True)
 st.subheader("Bultos")
 st.caption("Cargá por bulto: **cantidad** y **dimensiones en cm**. Calculamos el **peso volumétrico**.")
 
-del_row_idx = None
 for i, r in enumerate(st.session_state.rows):
     st.markdown(f"**Bulto {i+1}**")
     c1, c2, c3, c4 = st.columns([0.9, 1, 1, 1])
@@ -299,11 +311,12 @@ for i, r in enumerate(st.session_state.rows):
     col_del, _ = st.columns([1,3])
     with col_del:
         if st.button("🗑️ Eliminar bulto", key=f"del_row_{i}", use_container_width=True):
-            del_row_idx = i
+            if len(st.session_state.rows) > 1:
+                st.session_state.rows.pop(i)
+            else:
+                st.session_state.rows = [{"cant":0, "ancho":0, "alto":0, "largo":0}]
+            st.rerun()
     st.markdown('<div class="gt-item-divider"></div>', unsafe_allow_html=True)
-
-if del_row_idx is not None:
-    st.session_state.rows.pop(del_row_idx)
 
 st.markdown('<div class="gt-actions-row">', unsafe_allow_html=True)
 ba, bb = st.columns(2)

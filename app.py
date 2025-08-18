@@ -196,7 +196,7 @@ def validate():
     if not st.session_state.telefono.strip(): errs.append("• Teléfono es obligatorio.")
     if not any(p["descripcion"].strip() and p["link"].strip() for p in st.session_state.productos):
         errs.append("• Cargá al menos un producto con descripción y link.")
-    if st.session_state.pais_origen == "Otro" and not st.session_state.pais_origen_otro.strip():
+    if st.session_state.pais_origen == "Otro" and not (st.session_state.pais_origen_otro or "").strip():
         errs.append("• Indicá el país de origen.")
     if not any(
         to_float(r["cant"])>0 and (to_float(r["ancho"])+to_float(r["alto"])+to_float(r["largo"]))>0
@@ -240,13 +240,21 @@ st.markdown('<div class="gt-section"><div class="gt-divider"></div></div>', unsa
 # -------------------- País de origen --------------------
 st.markdown('<div class="gt-section">', unsafe_allow_html=True)
 st.subheader("País de origen de los productos a cotizar")
-sel = st.radio("Seleccioná el país de origen:", ["China", "Otro"],
-               index=0 if st.session_state.pais_origen=="China" else 1, horizontal=True)
-if sel == "Otro":
-    st.session_state.pais_origen = "Otro"
-    st.session_state.pais_origen_otro = st.text_input("Ingresá el país de origen", value=st.session_state.pais_origen_otro).strip()
-else:
-    st.session_state.pais_origen = "China"
+
+# Evitamos resets: controlamos sólo por 'key' y usamos el valor al final
+st.radio(
+    "Seleccioná el país de origen:",
+    ["China", "Otro"],
+    key="pais_origen",
+    horizontal=True
+)
+
+if st.session_state.pais_origen == "Otro":
+    st.text_input(
+        "Ingresá el país de origen",
+        key="pais_origen_otro",
+        placeholder="Ej: Vietnam"
+    )
 st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown('<div class="gt-section"><div class="gt-divider"></div></div>', unsafe_allow_html=True)
@@ -294,7 +302,7 @@ st.subheader("Bultos")
 st.caption("Cargá por bulto: **cantidad** y **dimensiones en cm**. Calculamos el **peso volumétrico**.")
 
 for i, r in enumerate(st.session_state.rows):
-    # ---- FIX anti “salto hacia atrás”: sembrar default sólo una vez y NO pasar value= en el widget ----
+    # FIX anti “salto atrás”: sembrar default sólo una vez y NO pasar value= en el widget
     cant_key = f"cant_{i}"
     an_key   = f"an_{i}"
     al_key   = f"al_{i}"
@@ -303,7 +311,6 @@ for i, r in enumerate(st.session_state.rows):
     if an_key   not in st.session_state: st.session_state[an_key]   = float(r["ancho"])
     if al_key   not in st.session_state: st.session_state[al_key]   = float(r["alto"])
     if lar_key  not in st.session_state: st.session_state[lar_key]  = float(r["largo"])
-    # -----------------------------------------------------------------------------------------------
 
     st.markdown(f"**Bulto {i+1}**")
     c1, c2, c3, c4 = st.columns([0.9, 1, 1, 1])
@@ -327,7 +334,6 @@ for i, r in enumerate(st.session_state.rows):
                 st.session_state.rows.pop(i)
             else:
                 st.session_state.rows = [{"cant":0, "ancho":0, "alto":0, "largo":0}]
-            # limpiar también las keys de los widgets eliminados
             for k in [cant_key, an_key, al_key, lar_key]:
                 if k in st.session_state: del st.session_state[k]
             st.rerun()
@@ -382,7 +388,8 @@ if submit_clicked:
             {"descripcion": p["descripcion"].strip(), "link": p["link"].strip()}
             for p in st.session_state.productos if p["descripcion"].strip() and p["link"].strip()
         ]
-        pais_final = st.session_state.pais_origen if st.session_state.pais_origen == "China" else st.session_state.pais_origen_otro.strip()
+        # Normalizamos país de origen aquí para evitar resets durante la edición
+        pais_final = "China" if st.session_state.pais_origen == "China" else (st.session_state.pais_origen_otro or "").strip()
         payload = {
             "timestamp": datetime.utcnow().isoformat(),
             "origen": "streamlit-cotizador",

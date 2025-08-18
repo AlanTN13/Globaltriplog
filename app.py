@@ -1,6 +1,6 @@
 # app.py
 from __future__ import annotations
-import os, json, requests, uuid
+import os, json, requests
 from datetime import datetime
 import streamlit as st
 
@@ -125,8 +125,6 @@ div.stButton > button:hover{ background:#eef3ff !important; }
 .gt-body p{ margin:10px 0; color:#1f2a44; line-height:1.55; }
 .gt-body a{ color:#2563eb; text-decoration:underline; }
 .gt-actions{ display:flex; gap:14px; margin-top:18px; flex-wrap:wrap; }
-
-/* Botones del modal con el mismo color que el título */
 .gt-btn{
   display:inline-flex; align-items:center; gap:8px; padding:14px 18px; border-radius:16px;
   background:#edf3ff; border:1.5px solid #cfe0ff; color:var(--ink) !important;
@@ -134,16 +132,12 @@ div.stButton > button:hover{ background:#eef3ff !important; }
 }
 .gt-btn:hover{ background:#e7efff; color:var(--ink) !important; }
 .gt-btn.secondary{ background:#f6f8ff; border-color:#dbe6ff; color:var(--ink) !important; }
-
 .gt-close{
   position:absolute; top:14px; right:14px; width:40px; height:40px; border-radius:12px;
   display:grid; place-items:center; background:#f6f8ff; border:1px solid #dbe6ff; color:#2a6ae6; text-decoration:none; font-size:20px;
 }
 .gt-close:hover{ background:#eef3ff; }
-
 @keyframes gt-pop{ from{ transform:translateY(6px); opacity:.0 } to{ transform:translateY(0); opacity:1 } }
-
-/* Labels visibles */
 div[data-testid="stTextInput"] label,
 div[data-testid="stNumberInput"] label,
 div[data-testid="stTextArea"] label{
@@ -154,46 +148,9 @@ div[data-testid="stTextArea"] label{
 
 # -------------------- Estado --------------------
 FACTOR_VOL = 5000
-
-def _row_template():
-    return {
-        "id": str(uuid.uuid4()),
-        "cant": 0,
-        "ancho": 0.0,
-        "alto": 0.0,
-        "largo": 0.0,
-    }
-
-def _prod_template():
-    return {
-        "id": str(uuid.uuid4()),
-        "descripcion": "",
-        "link": ""
-    }
-
 def init_state():
-    # Mantengo tu lógica original con setdefault, pero agrego IDs estables
-    if "rows" not in st.session_state:
-        st.session_state.rows = [_row_template()]
-    else:
-        # Añadir id a los existentes si no lo tienen
-        fixed = []
-        for r in st.session_state.rows or []:
-            if "id" not in r:
-                r = {"id": str(uuid.uuid4()), **r}
-            fixed.append(r)
-        st.session_state.rows = fixed or [_row_template()]
-
-    if "productos" not in st.session_state:
-        st.session_state.productos = [_prod_template()]
-    else:
-        fixed = []
-        for p in st.session_state.productos or []:
-            if "id" not in p:
-                p = {"id": str(uuid.uuid4()), **p}
-            fixed.append(p)
-        st.session_state.productos = fixed or [_prod_template()]
-
+    st.session_state.setdefault("rows", [{"cant":0, "ancho":0, "alto":0, "largo":0}])
+    st.session_state.setdefault("productos", [{"descripcion":"", "link":""}])
     st.session_state.setdefault("nombre","")
     st.session_state.setdefault("email","")
     st.session_state.setdefault("telefono","")
@@ -250,16 +207,16 @@ def validate():
 
 # -------------------- Callbacks --------------------
 def add_row():
-    st.session_state.rows.append(_row_template())
+    st.session_state.rows.append({"cant": 0, "ancho": 0, "alto": 0, "largo": 0})
 
 def clear_rows():
-    st.session_state.rows = [_row_template()]
+    st.session_state.rows = [{"cant": 0, "ancho": 0, "alto": 0, "largo": 0}]
 
 def add_producto():
-    st.session_state.productos.append(_prod_template())
+    st.session_state.productos.append({"descripcion":"", "link":""})
 
 def clear_productos():
-    st.session_state.productos = [_prod_template()]
+    st.session_state.productos = [{"descripcion":"", "link":""}]
 
 # -------------------- Header --------------------
 st.markdown("""
@@ -304,22 +261,21 @@ for i, p in enumerate(st.session_state.productos):
     pc1, pc2 = st.columns(2)
     with pc1:
         st.session_state.productos[i]["descripcion"] = st.text_area(
-            "Descripción*", value=p["descripcion"], key=f"prod_desc_{p['id']}",
+            "Descripción*", value=p["descripcion"], key=f"prod_desc_{i}",
             placeholder='Ej: "Máquina selladora de bolsas"', height=80
         )
     with pc2:
         st.session_state.productos[i]["link"] = st.text_area(
-            "Link*", value=p["link"], key=f"prod_link_{p['id']}",
+            "Link*", value=p["link"], key=f"prod_link_{i}",
             placeholder="https://...", height=80
         )
     col_del, _ = st.columns([1,3])
     with col_del:
-        if st.button("🗑️ Eliminar producto", key=f"del_prod_{p['id']}", use_container_width=True):
+        if st.button("🗑️ Eliminar producto", key=f"del_prod_{i}", use_container_width=True):
             if len(st.session_state.productos) > 1:
-                # eliminar por id estable (no por índice)
-                st.session_state.productos = [pp for pp in st.session_state.productos if pp["id"] != p["id"]]
+                st.session_state.productos.pop(i)
             else:
-                st.session_state.productos = [_prod_template()]
+                st.session_state.productos = [{"descripcion":"", "link":""}]
             st.rerun()
     st.markdown('<div class="gt-item-divider"></div>', unsafe_allow_html=True)
 
@@ -338,31 +294,42 @@ st.subheader("Bultos")
 st.caption("Cargá por bulto: **cantidad** y **dimensiones en cm**. Calculamos el **peso volumétrico**.")
 
 for i, r in enumerate(st.session_state.rows):
+    # ---- FIX anti “salto hacia atrás”: sembrar default sólo una vez y NO pasar value= en el widget ----
+    cant_key = f"cant_{i}"
+    an_key   = f"an_{i}"
+    al_key   = f"al_{i}"
+    lar_key  = f"lar_{i}"
+    if cant_key not in st.session_state: st.session_state[cant_key] = int(r["cant"])
+    if an_key   not in st.session_state: st.session_state[an_key]   = float(r["ancho"])
+    if al_key   not in st.session_state: st.session_state[al_key]   = float(r["alto"])
+    if lar_key  not in st.session_state: st.session_state[lar_key]  = float(r["largo"])
+    # -----------------------------------------------------------------------------------------------
+
     st.markdown(f"**Bulto {i+1}**")
     c1, c2, c3, c4 = st.columns([0.9, 1, 1, 1])
     with c1:
-        st.session_state.rows[i]["cant"]  = st.number_input(
-            "Cantidad",  min_value=0, step=1, value=int(r["cant"]), key=f"cant_{r['id']}"
-        )
+        st.number_input("Cantidad",  min_value=0,   step=1,   key=cant_key)
+        st.session_state.rows[i]["cant"]  = int(st.session_state[cant_key])
     with c2:
-        st.session_state.rows[i]["ancho"] = st.number_input(
-            "Ancho (cm)", min_value=0.0, step=1.0, value=float(r["ancho"]), key=f"an_{r['id']}"
-        )
+        st.number_input("Ancho (cm)", min_value=0.0, step=1.0, key=an_key)
+        st.session_state.rows[i]["ancho"] = float(st.session_state[an_key])
     with c3:
-        st.session_state.rows[i]["alto"]  = st.number_input(
-            "Alto (cm)",  min_value=0.0, step=1.0, value=float(r["alto"]),  key=f"al_{r['id']}"
-        )
+        st.number_input("Alto (cm)",  min_value=0.0, step=1.0, key=al_key)
+        st.session_state.rows[i]["alto"]  = float(st.session_state[al_key])
     with c4:
-        st.session_state.rows[i]["largo"] = st.number_input(
-            "Largo (cm)", min_value=0.0, step=1.0, value=float(r["largo"]), key=f"lar_{r['id']}"
-        )
+        st.number_input("Largo (cm)", min_value=0.0, step=1.0, key=lar_key)
+        st.session_state.rows[i]["largo"] = float(st.session_state[lar_key])
+
     col_del, _ = st.columns([1,3])
     with col_del:
-        if st.button("🗑️ Eliminar bulto", key=f"del_row_{r['id']}", use_container_width=True):
+        if st.button("🗑️ Eliminar bulto", key=f"del_row_{i}", use_container_width=True):
             if len(st.session_state.rows) > 1:
-                st.session_state.rows = [rr for rr in st.session_state.rows if rr["id"] != r["id"]]
+                st.session_state.rows.pop(i)
             else:
-                st.session_state.rows = [_row_template()]
+                st.session_state.rows = [{"cant":0, "ancho":0, "alto":0, "largo":0}]
+            # limpiar también las keys de los widgets eliminados
+            for k in [cant_key, an_key, al_key, lar_key]:
+                if k in st.session_state: del st.session_state[k]
             st.rerun()
     st.markdown('<div class="gt-item-divider"></div>', unsafe_allow_html=True)
 
@@ -427,8 +394,7 @@ if submit_clicked:
             },
             "pais_origen": pais_final,
             "productos": productos_validos,
-            # No envío los ids, sólo los datos relevantes:
-            "bultos": [{k:v for k,v in r.items() if k in ("cant","ancho","alto","largo")} for r in st.session_state.rows],
+            "bultos": st.session_state.rows,
             "pesos": {
                 "volumetrico_kg": total_peso_vol,
                 "bruto_kg": st.session_state.peso_bruto,

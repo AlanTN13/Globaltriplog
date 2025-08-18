@@ -215,8 +215,8 @@ def clear_productos(): st.session_state.productos = [{"descripcion":"", "link":"
 # -------------------- Header --------------------
 st.markdown("""
 <div class="soft-card gt-section">
-  <h2 style="margin:0;">📦 Cotización de Envío por Courier</h2>
-  <p style="margin:6px 0 0;">Completá tus datos, el producto y sus medidas, y te enviamos la cotización por mail.</p>
+  <h2 style="margin:0;">📦 Cotización de Importación por Courier</h2>
+  <p style="margin:6px 0 0;">Completá tus datos e información de tu importación y te enviaremos la cotización por mail.</p>
 </div>
 """, unsafe_allow_html=True)
 

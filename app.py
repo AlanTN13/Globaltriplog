@@ -226,6 +226,23 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# -------------------- Leyenda / Reglas --------------------
+st.markdown('<div class="gt-section">', unsafe_allow_html=True)
+st.markdown(
+    """
+<div class="soft-card" style="border-color:#dbe6ff;background:#f7faff">
+  <p style="margin:0 0 6px;color:#0e1b3d;"><b>Recordá las reglas del courier:</b></p>
+  <p style="margin:0;color:#0e1b3d;opacity:.95;"><i>
+    El valor total de la compra no puede superar los <b>3000 dólares</b> y el
+    <b>peso de cada bulto</b> no puede superar los <b>50 kilogramos brutos</b>.
+  </i></p>
+</div>
+""",
+    unsafe_allow_html=True,
+)
+st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('<div class="gt-section"><div class="gt-divider"></div></div>', unsafe_allow_html=True)
+
 # -------------------- Datos de contacto --------------------
 st.markdown('<div class="gt-section">', unsafe_allow_html=True)
 st.subheader("Datos de contacto")
